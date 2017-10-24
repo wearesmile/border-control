@@ -216,11 +216,11 @@ class Border_Control_Admin {
 //			$owners = get_field( 'owner', $post->ID, false );
 //			$user = wp_get_current_user();
 //			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) && 'pending' === $post->post_status ) :
-//				?>
-//				<div class="reject-action" style="float: left; margin-right: 10px;">
-//					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
-//				</div>
-//				<?php
+				/*?>
+				<div class="reject-action" style="float: left; margin-right: 10px;">
+					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
+				</div>
+				<?php*/
 //			endif;
 //		endif;
 //	}
@@ -538,22 +538,23 @@ class Border_Control_Admin {
 //	 */
 //	function display_post_status( $attachment_submitbox_metadata ) {
 //		if ( ! current_user_can( 'manage_options' ) ) :
-//			global $post; ?>
-//			<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
-//				<?php esc_html_e( 'Status:' ) ?>
-//				<span id="post-status-display"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
-//			</div>
-//
-//			<script id="true_post_status">
-//			jQuery(document).ready(function($) {
-//				var $post_status_div = $( '.misc-pub-post-status' );
-//				console.log($post_status_div);
-//				if ( $post_status_div.length ) {
-//					$post_status_div[0].remove();
-//				}
-//			});
-//			</script>
-//		<?php
+//			global $post;
+	/*?>
+			<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
+				<?php esc_html_e( 'Status:' ) ?>
+				<span id="post-status-display"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
+			</div>
+
+			<script id="true_post_status">
+			jQuery(document).ready(function($) {
+				var $post_status_div = $( '.misc-pub-post-status' );
+				console.log($post_status_div);
+				if ( $post_status_div.length ) {
+					$post_status_div[0].remove();
+				}
+			});
+			</script>
+		<?php*/
 //		endif;
 //	};
 //	add_action( 'post_submitbox_misc_actions', 'display_post_status', 10, 1 );
@@ -574,25 +575,24 @@ class Border_Control_Admin {
 //				$owners = get_field( 'owner', $post->ID, false );
 //				if ( 'auto-draft' !== $post_status  ) :
 //					if ( empty( $owners ) ) :
-//					?>
-//						<div class="notice notice-error">
-//								<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
-//						</div>
-//					<?php
+					/*?>
+						<div class="notice notice-error">
+								<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
+						</div>
+					<?php*/
 //					elseif ( in_array( $screen->id, $post_types, true ) && $post_status && ! empty( $owners ) ) :
 //						$approved_owners = get_post_meta( $post->ID, '_approve-list' );
 //						$remaining_approve_owners = array_diff( $owners, $approved_owners );
 //						if ( 'pending' === get_post_status( $post->ID ) && count( $remaining_approve_owners ) ) :
 //							$user_has_approved = false;
-//							?>
-//							<div class="notice notice-info">
-//								<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
-//								<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
-//									<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
-//								<?php else : ?>
-//									<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
-//								<?php endif; ?>
-//								<p><?php
+							/*?>
+							<div class="notice notice-info">
+								<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
+								<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
+									<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
+								<?php else : ?>
+									<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
+								<p><?php*/
 //								echo esc_html( ' Pending review by ' );
 //								$i = 0;
 //								$len = count( $remaining_approve_owners );
@@ -623,14 +623,14 @@ class Border_Control_Admin {
 //									$i++;
 //								endforeach;
 //								echo esc_html( '.' );
-//								?></p>
-//							</div>
-//							<?php if ( $user_has_approved ) : ?>
-//								<div class="notice notice-success">
-//										<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
-//								</div>
-//							<?php endif; ?>
-//							<?php
+								/*?></p>
+							</div>
+							<?php if ( $user_has_approved ) : ?>
+								<div class="notice notice-success">
+										<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
+								</div>
+							<?php endif; ?>
+							<?php*/
 //						endif;
 //						if ( 'pending' === get_post_status( $post->ID ) ) :
 //							$original_id = get_post_meta( $post->ID, 'original', true );
@@ -639,11 +639,11 @@ class Border_Control_Admin {
 //								$original_id = (int) $original_id;
 //								$original_post = get_post( $original_id );
 //								if ( 'publish' === $original_post->post_status ) :
-//									?>
-//									<div class="notice notice-success">
-//										<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
-//									</div>
-//									<?php
+									/*?>
+									<div class="notice notice-success">
+										<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
+									</div>
+									<?php*/
 //								endif;
 //							endif;
 //						endif;
@@ -758,22 +758,22 @@ class Border_Control_Admin {
 //					echo '</ul></td>';
 //				endwhile;
 //				echo '</tbody></table>';
-//				?>
-//					<style>
-//						#dashboard-widgets #pending_review_widget.postbox .inside {
-//							padding: 0;
-//							margin: 0;
-//						}
-//						#dashboard-widgets #pending_review_widget.postbox table.widefat {
-//							border: 0;
-//						}
-//					</style>
-//				<?php
+				/*?>
+					<style>
+						#dashboard-widgets #pending_review_widget.postbox .inside {
+							padding: 0;
+							margin: 0;
+						}
+						#dashboard-widgets #pending_review_widget.postbox table.widefat {
+							border: 0;
+						}
+					</style>
+				<?php*/
 //				wp_reset_postdata();
 //			else :
-//			?>
-//				<p><?php echo esc_html( 'You have nothing to review.' ); ?></p>
-//			<?php
+			/*?>
+				<p><?php echo esc_html( 'You have nothing to review.' ); ?></p>
+			<?php*/
 //			endif;
 //		endif;
 //	}
