@@ -158,6 +158,9 @@ class Border_Control {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_rejected_post_status' );
+		$this->loader->add_action( 'load-post.php', $plugin_admin, 'sbc_create_draft' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_hide_pending', 1 );
 
 	}
 

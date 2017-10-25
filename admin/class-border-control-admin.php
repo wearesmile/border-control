@@ -73,6 +73,7 @@ class Border_Control_Admin {
 		 * class.
 		 */
 
+		wp_enqueue_style('select2', 'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.4/css/select2.min.css' );
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/border-control-admin.css', array(), $this->version, 'all' );
 
 	}
@@ -96,6 +97,7 @@ class Border_Control_Admin {
 		 * class.
 		 */
 
+		wp_enqueue_script('select2', 'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.4/js/select2.min.js', array( 'jquery' ), '4.0.4', false );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/border-control-admin.js', array( 'jquery' ), $this->version, false );
 
 	}
@@ -114,22 +116,38 @@ class Border_Control_Admin {
 
 	public function sbc_settings_init(  ) {
 
-		register_setting( 'pluginPage', 'sbc_settings' );
+		register_setting( 'borderControlPage', 'sbc_settings' );
 
 		add_settings_section(
-			'sbc_pluginPage_section',
+			'sbc_borderControlPage_section',
 //			__( 'Your section description', 'smile' ),
 			__( '', 'smile' ),
 			array( $this, 'sbc_settings_section_callback' ),
-			'pluginPage'
+			'borderControlPage'
+		);
+
+		add_settings_field(
+			'sbc_users',
+			__( 'Users who can approve moderation', 'smile' ),
+			array( $this, 'sbc_users_render' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
+		);
+
+		add_settings_field(
+			'sbc_role',
+			__( 'User roles which can moderate', 'smile' ),
+			array( $this, 'sbc_roles_render' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
 		);
 
 		add_settings_field(
 			'sbc_post_type',
 			__( 'Post types to moderate', 'smile' ),
 			array( $this, 'sbc_post_type_render' ),
-			'pluginPage',
-			'sbc_pluginPage_section'
+			'borderControlPage',
+			'sbc_borderControlPage_section'
 		);
 
 	}
@@ -148,17 +166,56 @@ class Border_Control_Admin {
 				),
 				'objects'
 			);
+			$name = 'sbc_post_type';
 			foreach ( $post_types as $post_type ) :
-				$name = 'sbc_post_type_' . $post_type->name;
 			?>
-			<label><input type="checkbox" name="sbc_settings[<?php esc_attr_e( $name ); ?>]" value="1" <?php
-				if ( isset( $options[ $name ] ) ) :
-				   checked( $options[ $name ], 1 );
+			<label><input type="checkbox" name="sbc_settings[<?php esc_attr_e( $name ); ?>][]" value="<?php esc_attr_e( $post_type->name ); ?>" <?php
+				if ( isset( $options[ $name ] ) && in_array( $post_type->name, $options[ $name ] ) ) :
+				   echo 'checked="checked"';
 				endif; ?>> <span class=""><?php esc_html_e( $post_type->label ); ?></span></label><br>
 			<?php endforeach; ?>
 		</fieldset>
 		<?php
+	}
 
+
+	public function sbc_users_render(  ) {
+		$name = 'sbc_users';
+		$options = get_option( 'sbc_settings' );
+		$selected_users = ( isset( $options[ $name ] ) ) ? implode( ',', $options[ $name ] ) : null;
+		$args = array(
+			'echo'					=> false,
+			'selected'				=> $selected_users,
+			'include_selected'		=> false,
+			'name'			 		=> "sbc_settings[$name][]", // string
+			'id'			 		=> null, // integer
+			'class'			 		=> 'select2', // string
+		);
+		$dropdown = wp_dropdown_users( $args );
+		$multi = str_replace( '<select', '<select multiple="multiple" ', $dropdown );
+		echo $multi;
+		?>
+		<?php
+	}
+
+
+	public function sbc_roles_render(  ) {
+		$name = 'sbc_roles';
+		$options = get_option( 'sbc_settings' );
+		$selected_users = ( isset( $options[ $name ] ) ) ? implode( ',', $options[ $name ] ) : null;
+		$args = array(
+			'echo'					=> false,
+			'selected'				=> $selected_users,
+			'include_selected'		=> false,
+			'name'			 		=> "sbc_settings[$name][]", // string
+			'id'			 		=> null, // integer
+			'class'			 		=> 'select2', // string
+		);
+		$dropdown = wp_dropdown_users( $args );
+		$multi = str_replace( '<select', '<select multiple="multiple" ', $dropdown );
+		echo $multi;
+		?>
+		<?php
 	}
 
 
@@ -175,8 +232,8 @@ class Border_Control_Admin {
 			<form action='options.php' method='post'>
 
 				<?php
-				settings_fields( 'pluginPage' );
-				do_settings_sections( 'pluginPage' );
+				settings_fields( 'borderControlPage' );
+				do_settings_sections( 'borderControlPage' );
 				submit_button();
 				?>
 
@@ -186,24 +243,21 @@ class Border_Control_Admin {
 
 	}
 
-//	$post_types = array( 'post', 'jobs', 'people', 'places', 'subject-areas', 'vip', 'tribe_events', 'page' );
-//
-//	/**
-//	 * Rejected post status.
-//	 *
-//	 * @author Warren Reeves
-//	 */
-//	public function rejected_post_status() {
-//		register_post_status( 'rejected', array(
-//			'label'                     => _x( 'Requires Improvement', 'post' ),
-//			'public'                    => false,
-//			'exclude_from_search'       => true,
-//			'show_in_admin_all_list'    => true,
-//			'show_in_admin_status_list' => true,
-//			'label_count'               => _n_noop( 'Require Improvement <span class="count">(%s)</span>', 'Require Improvement <span class="count">(%s)</span>' ),
-//		) );
-//	}
-//	add_action( 'init', 'rejected_post_status' );
+	/**
+	 * Rejected post status.
+	 *
+	 * @author Warren Reeves
+	 */
+	public function sbc_rejected_post_status() {
+		register_post_status( 'rejected', array(
+			'label'                     => _x( 'Requires Improvement', 'post' ),
+			'public'                    => false,
+			'exclude_from_search'       => true,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Require Improvement <span class="count">(%s)</span>', 'Require Improvement <span class="count">(%s)</span>' ),
+		) );
+	}
 //
 //	/**
 //	 * Rejected submit button.
@@ -944,154 +998,165 @@ class Border_Control_Admin {
 //	}
 //
 //	add_action( 'acf/update_value/name=owner', 'governance_meta_update', 10, 3 );
-//
-//	/**
-//	 * Create draft when editing a post
-//	 */
-//	function create_draft() {
-//		global $wpdb;
-//		if ( ! is_admin() ) :
-//			return false;
-//		endif;
-//		if ( 'edit' !== $_GET['action'] ) :
-//			return false;
-//		endif;
-//
-//		$post_id = ( isset( $_GET['post'] ) ? absint( $_GET['post'] ) : absint( $_POST['post'] ) );
-//
-//		$post_types = array( 'post', 'page', 'jobs', 'people', 'places', 'subject-area', 'vip' );
-//
-//		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
-//
-//			$original = get_post_meta( $post_id, 'original', true );
-//
-//			if ( $original ) :
-//				return false;
-//			else :
-//				$args = array(
-//					'post_type' => $post_types,
-//					'post_status' => 'pending',
-//					'meta_query' => array(
-//						array(
-//							'key' => 'original',
-//							'value' => (string) $post_id,
-//							'compare' => '=',
-//						)
-//					)
-//				);
-//				$query = new WP_Query( $args );
-//				if ( $query->have_posts() ) :
-//					while ( $query->have_posts() ) : $query->the_post();
-//						wp_redirect( admin_url( 'post.php?action=edit&post=' . get_the_ID() ) );
-//						exit;
-//						return false;
-//					endwhile;
-//					/* Restore original Post Data */
-//					wp_reset_postdata();
-//				else :
-//
-//					$post = get_post( $post_id );
-//
-//					if ( 'draft' === $post->post_status || 'pending' === $post->post_status ) :
-//						return false;
-//					endif;
-//
-//					$current_user = wp_get_current_user();
-//					$new_post_author = $current_user->ID;
-//
-//					/*
-//					 * If post data exists, create the post duplicate.
-//					 */
-//					if ( isset( $post ) && null !== $post ) {
-//
-//						/*
-//						 * New post data array.
-//						 */
-//						$args = array(
-//							'comment_status' => $post->comment_status,
-//							'ping_status'    => $post->ping_status,
-//							'post_author'    => $new_post_author,
-//							'post_content'   => $post->post_content,
-//							'post_excerpt'   => $post->post_excerpt,
-//							'post_name'      => $post->post_name,
-//							'post_parent'    => $post_id,
-//							'post_password'  => $post->post_password,
-//							'post_status'    => 'pending',
-//							'post_title'     => $post->post_title,
-//							'post_type'      => $post->post_type,
-//							'to_ping'        => $post->to_ping,
-//							'menu_order'     => $post->menu_order,
-//						);
-//
-//						/*
-//						 * insert the post by wp_insert_post() function
-//						 */
-//						$new_post_id = wp_insert_post( $args );
-//
-//						/*
-//						 * get all current post terms and set them to the new post draft
-//						 */
-//						$taxonomies = get_object_taxonomies( $post->post_type ); // returns array of taxonomy names for post type, ex array("category", "post_tag");
-//						foreach ( $taxonomies as $taxonomy ) {
-//							$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
-//							wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
-//						}
-//
-//						/*
-//						 * Duplicate all post meta just in two SQL queries.
-//						 */
-//						$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
-//						if ( 0 !== count( $post_meta_infos ) ) {
-//							$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
-//							foreach ( $post_meta_infos as $meta_info ) {
-//								$meta_key = $meta_info->meta_key;
-//								if ( '_wp_old_slug' === $meta_key ) :
-//									continue;
-//								endif;
-//								$meta_value = addslashes( $meta_info->meta_value );
-//								$sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
-//							}
-//							$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
-//							$wpdb->query( $sql_query );
-//						}
-//
-//						/*
-//						 * Reasign all post revisions to the new post.
-//						 */
-//						$revisions = wp_get_post_revisions( $post_id );
-//						foreach ( $revisions as $revision ) :
-//							wp_update_post(
-//								array(
-//	//								'ID' => $revision->ID,
-//									'post_parent' => $new_post_id,
-//								)
-//							);
-//						endforeach;
-//
-//						add_post_meta( $new_post_id, 'original', $post_id, true );
-//
-//						/*
-//						 * finally, redirect to the edit post screen for the new draft
-//						 */
-//						wp_redirect( admin_url( "post.php?action=edit&post=$new_post_id" ) );
-//						exit;
-//					} else {
-//						wp_die( "Post creation failed, could not find original post: $post_id" );
-//					}
-//				endif;
-//			endif;
-//		endif;
-//	}
-//	add_action( 'load-post.php', 'create_draft' );
-//
-//	/**
-//	 * Filter originals from drafts in admin post list
-//	 *
-//	 * @param string $query the query to modify.
-//	 */
-//	add_action( 'init', function() use ( &$wp_post_statuses ) {
-//		$wp_post_statuses['pending']->show_in_admin_all_list = false;
-//	}, 1 );
 
+	/**
+	 * Create draft when editing a post
+	 */
+	public function sbc_create_draft() {
+		global $wpdb;
+		if ( ! is_admin() ) :
+			return false;
+		endif;
+		if ( 'edit' !== $_GET['action'] ) :
+			return false;
+		endif;
+
+		$post_id = ( isset( $_GET['post'] ) ? absint( $_GET['post'] ) : absint( $_POST['post'] ) );
+
+		$options = get_option( 'sbc_settings' );
+		$post_types = $options['sbc_post_type'];
+
+		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
+
+			$original = get_post_meta( $post_id, 'original', true );
+
+			if ( $original ) :
+				return false;
+			else :
+				$args = array(
+					'post_type' => $post_types,
+					'post_status' => 'pending',
+					'meta_query' => array(
+						array(
+							'key' => 'original',
+							'value' => (string) $post_id,
+							'compare' => '=',
+						)
+					)
+				);
+				$query = new WP_Query( $args );
+				if ( $query->have_posts() ) :
+					while ( $query->have_posts() ) : $query->the_post();
+						wp_redirect( admin_url( 'post.php?action=edit&post=' . get_the_ID() ) );
+						exit;
+						return false;
+					endwhile;
+					/* Restore original Post Data */
+					wp_reset_postdata();
+				else :
+
+					$post = get_post( $post_id );
+
+					if ( 'draft' === $post->post_status || 'pending' === $post->post_status ) :
+						return false;
+					endif;
+
+					$current_user = wp_get_current_user();
+					$new_post_author = $current_user->ID;
+
+					/*
+					 * If post data exists, create the post duplicate.
+					 */
+					if ( isset( $post ) && null !== $post ) {
+
+						/*
+						 * New post data array.
+						 */
+						$args = array(
+							'comment_status' => $post->comment_status,
+							'ping_status'    => $post->ping_status,
+							'post_author'    => $new_post_author,
+							'post_content'   => $post->post_content,
+							'post_excerpt'   => $post->post_excerpt,
+							'post_name'      => $post->post_name,
+							'post_parent'    => $post_id,
+							'post_password'  => $post->post_password,
+							'post_status'    => 'pending',
+							'post_title'     => $post->post_title,
+							'post_type'      => $post->post_type,
+							'to_ping'        => $post->to_ping,
+							'menu_order'     => $post->menu_order,
+						);
+
+						/*
+						 * insert the post by wp_insert_post() function
+						 */
+						$new_post_id = wp_insert_post( $args );
+
+						/*
+						 * get all current post terms and set them to the new post draft
+						 */
+						$taxonomies = get_object_taxonomies( $post->post_type ); // returns array of taxonomy names for post type, ex array("category", "post_tag");
+						foreach ( $taxonomies as $taxonomy ) {
+							$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
+							wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
+						}
+
+						/*
+						 * Duplicate all post meta just in two SQL queries.
+						 */
+						$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+						if ( 0 !== count( $post_meta_infos ) ) {
+							$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+							foreach ( $post_meta_infos as $meta_info ) {
+								$meta_key = $meta_info->meta_key;
+								if ( '_wp_old_slug' === $meta_key ) :
+									continue;
+								endif;
+								$meta_value = addslashes( $meta_info->meta_value );
+								$sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
+							}
+							$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
+							$wpdb->query( $sql_query );
+						}
+
+						/*
+						 * Reasign all post revisions to the new post.
+						 */
+						$revisions = wp_get_post_revisions( $post_id );
+						foreach ( $revisions as $revision ) :
+							wp_update_post(
+								array(
+	//								'ID' => $revision->ID,
+									'post_parent' => $new_post_id,
+								)
+							);
+						endforeach;
+
+						add_post_meta( $new_post_id, 'original', $post_id, true );
+
+						/*
+						 * finally, redirect to the edit post screen for the new draft
+						 */
+						wp_redirect( admin_url( "post.php?action=edit&post=$new_post_id" ) );
+						exit;
+					} else {
+						wp_die( "Post creation failed, could not find original post: $post_id" );
+					}
+				endif;
+			endif;
+		endif;
+	}
+
+	/**
+	 * Filter originals from drafts in admin post list
+	 *
+	 * @param string $query the query to modify.
+	 */
+	public function sbc_hide_pending() {
+		global $wp_post_statuses;
+		$post_type = 'post';
+		if ( isset( $_GET['post_type'] ) ) :
+            // Will occur only in this screen: /wp-admin/edit.php?post_type=page
+            $post_type = $_GET['post_type'];
+        endif;
+
+		$options = get_option( 'sbc_settings' );
+		$post_types = $options['sbc_post_type'];
+
+		if ( in_array( $post_type, $post_types, true ) ) :
+			$wp_post_statuses['pending']->show_in_admin_all_list = false;
+		endif;
+	}
 
 }
