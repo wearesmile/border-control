@@ -182,39 +182,38 @@ class Border_Control_Admin {
 	public function sbc_users_render(  ) {
 		$name = 'sbc_users';
 		$options = get_option( 'sbc_settings' );
-		$selected_users = ( isset( $options[ $name ] ) ) ? implode( ',', $options[ $name ] ) : null;
-		$args = array(
-			'echo'					=> false,
-			'selected'				=> $selected_users,
-			'include_selected'		=> false,
-			'name'			 		=> "sbc_settings[$name][]", // string
-			'id'			 		=> null, // integer
-			'class'			 		=> 'select2', // string
-		);
-		$dropdown = wp_dropdown_users( $args );
-		$multi = str_replace( '<select', '<select multiple="multiple" ', $dropdown );
-		echo $multi;
+		$users = get_users();
+		$selected_users = ( isset( $options[ $name ] ) ) ? $options[ $name ] : array();
 		?>
+		<select multiple="multiple" class="select2" name="sbc_settings[<?php esc_attr_e( $name ); ?>][]">
+			<?php foreach ( $users as $user ) : ?>
+			<option value="<?php esc_attr_e( $user->ID ); ?>"<?php
+					if ( in_array( (string) $user->ID, $selected_users, true ) ) :
+						esc_attr_e( ' selected="selected"' );
+					endif;
+					?>><?php esc_html_e( $user->display_name ); ?></option>
+			<?php endforeach; ?>
+		</select>
 		<?php
 	}
 
 
 	public function sbc_roles_render(  ) {
+		global $wp_roles;
+		$roles = $wp_roles->get_names();
 		$name = 'sbc_roles';
 		$options = get_option( 'sbc_settings' );
-		$selected_users = ( isset( $options[ $name ] ) ) ? implode( ',', $options[ $name ] ) : null;
-		$args = array(
-			'echo'					=> false,
-			'selected'				=> $selected_users,
-			'include_selected'		=> false,
-			'name'			 		=> "sbc_settings[$name][]", // string
-			'id'			 		=> null, // integer
-			'class'			 		=> 'select2', // string
-		);
-		$dropdown = wp_dropdown_users( $args );
-		$multi = str_replace( '<select', '<select multiple="multiple" ', $dropdown );
-		echo $multi;
+		$selected_roles = ( isset( $options[ $name ] ) ) ? $options[ $name ] : array();
 		?>
+		<select multiple="multiple" class="select2" name="sbc_settings[<?php esc_attr_e( $name ); ?>][]">
+			<?php foreach ( $roles as $role => $name ) : ?>
+			<option value="<?php esc_attr_e( $role ); ?>"<?php
+					if ( in_array( $role, $selected_roles, true ) ) :
+						esc_attr_e( ' selected="selected"' );
+					endif;
+					?>><?php esc_html_e( $name ); ?></option>
+			<?php endforeach; ?>
+		</select>
 		<?php
 	}
 
@@ -1014,7 +1013,7 @@ class Border_Control_Admin {
 		$post_id = ( isset( $_GET['post'] ) ? absint( $_GET['post'] ) : absint( $_POST['post'] ) );
 
 		$options = get_option( 'sbc_settings' );
-		$post_types = $options['sbc_post_type'];
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
 		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
 
@@ -1152,7 +1151,7 @@ class Border_Control_Admin {
         endif;
 
 		$options = get_option( 'sbc_settings' );
-		$post_types = $options['sbc_post_type'];
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
 		if ( in_array( $post_type, $post_types, true ) ) :
 			$wp_post_statuses['pending']->show_in_admin_all_list = false;
