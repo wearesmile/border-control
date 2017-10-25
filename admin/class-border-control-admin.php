@@ -242,6 +242,21 @@ class Border_Control_Admin {
 
 	}
 
+	private function sbc_can_user_moderate() {
+		$options = get_option( 'sbc_settings' );
+		$user_id = get_current_user_id();
+		$user = get_userdata( $user_id );
+		$user_roles = $user->roles;
+
+		$users = ( isset( $options['sbc_users'] ) ) ? $options['sbc_users'] : array();
+		$roles = ( isset( $options['sbc_roles'] ) ) ? $options['sbc_roles'] : array();
+
+		if ( in_array( (string) $user_id, $users, true ) || ! empty( array_intersect( $user_roles, $roles ) ) )
+			return true;
+
+		return false;
+	}
+
 	/**
 	 * Rejected post status.
 	 *
@@ -257,27 +272,29 @@ class Border_Control_Admin {
 			'label_count'               => _n_noop( 'Require Improvement <span class="count">(%s)</span>', 'Require Improvement <span class="count">(%s)</span>' ),
 		) );
 	}
-//
-//	/**
-//	 * Rejected submit button.
-//	 *
-//	 * @author Warren Reeves
-//	 */
-//	function reject_submit_box() {
-//		global $post;
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			$owners = get_field( 'owner', $post->ID, false );
-//			$user = wp_get_current_user();
-//			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) && 'pending' === $post->post_status ) :
-				/*?>
+
+	/**
+	 * Rejected submit button.
+	 *
+	 * @author Warren Reeves
+	 */
+	public function sbc_reject_submit_box() {
+		global $post;
+
+		var_dump($this->sbc_can_user_moderate());
+
+		if ( $this->sbc_can_user_moderate() ) :
+			$owners = get_field( 'owner', $post->ID, false );
+			$user = wp_get_current_user();
+			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) && 'pending' === $post->post_status ) :
+				?>
 				<div class="reject-action" style="float: left; margin-right: 10px;">
 					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
 				</div>
-				<?php*/
-//			endif;
-//		endif;
-//	}
-//	add_action( 'post_submitbox_start', 'reject_submit_box' );
+				<?php
+			endif;
+		endif;
+	}
 //
 //	/**
 //	 * Change text on publish button depending on varying factors.
