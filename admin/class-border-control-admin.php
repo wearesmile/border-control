@@ -107,16 +107,16 @@ class Border_Control_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function sbc_add_admin_menu(  ) {
+	public function sbc_add_admin_menu() {
 
 		add_options_page( 'Border Control', 'Border Control', 'manage_options', 'border_control', array( $this, 'sbc_options_page' ) );
 
 	}
 
 
-	public function sbc_settings_init(  ) {
+	public function sbc_settings_init() {
 
-		register_setting( 'borderControlPage', 'sbc_settings' );
+		register_setting( 'borderControlPage', 'sbc_settings', array( $this, 'sbc_updated_options' ) );
 
 		add_settings_section(
 			'sbc_borderControlPage_section',
@@ -153,7 +153,7 @@ class Border_Control_Admin {
 	}
 
 
-	public function sbc_post_type_render(  ) {
+	public function sbc_post_type_render() {
 
 		$options = get_option( 'sbc_settings' );
 		?>
@@ -179,7 +179,7 @@ class Border_Control_Admin {
 	}
 
 
-	public function sbc_users_render(  ) {
+	public function sbc_users_render() {
 		$name = 'sbc_users';
 		$options = get_option( 'sbc_settings' );
 		$users = get_users();
@@ -198,7 +198,7 @@ class Border_Control_Admin {
 	}
 
 
-	public function sbc_roles_render(  ) {
+	public function sbc_roles_render() {
 		global $wp_roles;
 		$roles = $wp_roles->get_names();
 		$name = 'sbc_roles';
@@ -293,6 +293,37 @@ class Border_Control_Admin {
 			</select>
 		<?php
 	}
+	public function sbc_updated_options( $input ) {
+//		if ( ! function_exists( 'populate_roles' ) ) :
+//			require_once( ABSPATH . 'wp-admin/includes/schema.php' );
+//		endif;
+//		populate_roles();
+
+		$permissions = array();
+
+		$roles = $input['sbc_roles'];
+		$users = $input['sbc_users'];
+
+		foreach ( $input['sbc_post_type'] as $post_type ) :
+			$post_type_object = get_post_type_object( $post_type );
+			$permissions[] = $post_type_object->cap->publish_posts;
+		endforeach;
+
+		//loop through all roles
+		//if not in roles
+			//remove capabilities from role
+		//else
+			//add capabilities to role
+
+
+		//loop through all users
+		//if user role is not in roles and user is not in users
+			//remove capabilities from user
+		//else
+			//add capabilities to user
+
+		die();
+	}
 
 	public function sbc_owners_save( $post_id ) {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
@@ -314,6 +345,10 @@ class Border_Control_Admin {
 	}
 
 	private function sbc_can_user_moderate() {
+
+		if ( ! function_exists('get_userdata') )
+			return false;
+
 		$options = get_option( 'sbc_settings' );
 		$user_id = get_current_user_id();
 		$user = get_userdata( $user_id );
@@ -365,233 +400,227 @@ class Border_Control_Admin {
 		endif;
 	}
 
-//	/**
-//	 * Change text on publish button depending on varying factors.
-//	 *
-//	 * @param string $translation the translated text.
-//	 * @param string $text the original text.
-//	 * @author Warren Reeves
-//	 */
-//	function change_publish_button( $translation, $text ) {
-//		global $post;
-//		if ( is_admin() ) :
-//			if ( ! current_user_can( 'manage_options' ) ) :
-//				if ( 'Publish' === $text ) :
-//					$user = wp_get_current_user();
-//					if ( null !== $post && 'pending' === get_post_status( $post->ID ) ) :
-//						$approved_owners = get_post_meta( $post->ID, '_approve-list' );
-//						$owners = get_field( 'owner', $post->ID, false );
-//						if ( is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
-//							if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
-//								return 'Update';
-//							endif;
-//							return 'Approve';
-//						else :
-//							return 'Update';
-//						endif;
-//					elseif ( is_edit_page( 'new' ) ) :
-//						return 'Submit for Review';
-//					endif;
-//				elseif ( 'Submit for Review' === $text ) :
-//					$user = wp_get_current_user();
-//					if ( null !== $post && is_admin() && 'pending' === get_post_status( $post->ID ) ) :
-//						$approved_owners = get_post_meta( $post->ID, '_approve-list' );
-//						$owners = get_field( 'owner', $post->ID, false );
-//						if ( in_array( (string) $user->ID, $owners, true ) ) :
-//							if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
-//								return 'Update';
-//							endif;
-//							return 'Approve';
-//						endif;
-//					endif;
-//				endif;
-//			endif;
-//		endif;
-//		return $translation;
-//	}
-//	add_filter( 'gettext', 'change_publish_button', 10, 2 );
-//
-//	/**
-//	 * Send emails and set post status before the post is added to the databse.
-//	 *
-//	 * @param array $data The data passed via the $_POST parameter.
-//	 * @param array $postarr The post array which is ready to be added to the database.
-//	 * @author Warren Reeves
-//	 */
-//	function reject_post_save( $data, $postarr ) {
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			$pending_review_email = false;
-//			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-//			if ( ! empty( $postarr ) && isset( $postarr['post_ID'] ) ) :
-//				$post_id = $postarr['post_ID'];
-//				$prev_post = get_post( $post_id );
-//				$author_user = get_userdata( $prev_post->post_author );
-//				$user = wp_get_current_user();
-//				if ( isset( $postarr['reject'] ) ) : // Email the author and all other owners that x has rejected the post.
-//					delete_post_meta( $post_id, '_approve-list' ); // Reset approve list.
-//					$data['post_status'] = 'rejected'; // Change status to rejected.
-//
-//					$owners = get_field( 'owner', $post_id, false );
-//
-//					$owners_author = array_merge( $owners, array( $author_user->ID ) );
-//
-//					foreach ( $owners_author as $owner_author_id ) :
-//
-//						$owner_author = get_userdata( $owner_author_id );
-//
-//						$message = 'Hi ' . $owner_author->display_name . ",\r\n\r\n";
-//						$message .= 'This notice is to confirm that ' . $user->display_name . ' has rejected "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//
-//						if ( $owner_author_id === $author_user->ID ) :
-//							$message .= "You can modify the post here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
-//						else :
-//							$message .= "You will be notified when the author has submitted the post for review again, you do not need to take any action now.\r\n\r\n";
-//						endif;
-//
-//						$message .= "Regards, \r\n";
-//						$message .= $blogname . "\r\n";
-//						$message .= get_home_url();
-//
-//						wp_mail( $author_user->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
-//
-//					endforeach;
-//
-//				elseif ( isset( $postarr['publish'] ) ) :
-//					if ( 'pending' === $postarr['original_post_status'] ) :
-//						$owners = get_field( 'owner', $post_id, false );
-//
-//						$approved_owners = get_post_meta( $post_id, '_approve-list' );
-//
-//						if ( ! empty( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
-//
-//							if ( ! in_array( (string) $user->ID, $approved_owners, true ) && in_array( (string) $user->ID, $owners, true ) ) :
-//								add_post_meta( $post_id, '_approve-list', $user->ID ); // Add current user to aproove list is is not alread and is an owner.
-//
-//							endif;
-//
-//							$approved_owners = get_post_meta( $post_id, '_approve-list' );
-//
-//							$remaining_approve_owners = array_diff( $owners, $approved_owners ); // Check if all owners have approved.
-//
-//							if ( empty( $remaining_approve_owners ) ) :
-//								delete_post_meta( $post_id, '_approve-list' );
-//								// Email the author that x has approved and published the post.
-//								$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
-//								$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//								$message .= "All of the owners have now approved this post it is now published, you can view it here:\r\n" . get_permalink( $post_id ). "\r\n\r\n";
-//								$message .= "Regards, \r\n";
-//								$message .= $blogname . "\r\n";
-//								$message .= get_home_url();
-//
-//								wp_mail( $author_user->user_email, '[' . $blogname . '] Post published (' . $prev_post->post_title . ')', $message );
-//							else :
-//								$data['post_status'] = 'pending'; // Change status to pending review.
-//								// Email the author that x/y/z has approved the post, and a/b/c are still outstanding.
-//								$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
-//								$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n" . get_edit_post_link( $prev_post->ID ) . "\r\n\r\n";
-//
-//								$message .= "The following owners have not yet approved your post:\r\n";
-//								$remaining_approve_owners_names = array();
-//								foreach ( $remaining_approve_owners as $remaining_owner_id ) :
-//									$remaining_owner_user = get_userdata( $remaining_owner_id );
-//
-//									$remaining_approve_owners_names[] = $remaining_owner_user->display_name;
-//								endforeach;
-//								$message .= implode( ', ', $remaining_approve_owners_names ) . "\r\n\r\n";
-//
-//								$approved_owners = get_post_meta( $prev_post->ID, '_approve-list' );
-//
-//								if ( ! empty( $approved_owners ) ) :
-//
-//									$message .= "The following owners have now approved your post:\r\n";
-//									$approved_owners_names = array();
-//									foreach ( $approved_owners as $approved_owner_id ) :
-//										$approved_owner_user = get_userdata( $approved_owner_id );
-//
-//										$approved_owners_names[] = $approved_owner_user->display_name;
-//									endforeach;
-//									$message .= implode( ', ', $approved_owners_names ) . "\r\n\r\n";
-//
-//								endif;
-//
-//								$message .= "Regards, \r\n";
-//								$message .= $blogname . "\r\n";
-//								$message .= get_home_url();
-//
-//								wp_mail( $author_user->user_email, '[' . $blogname . '] Post approved (' . $prev_post->post_title . ')', $message );
-//							endif;
-//						else :
-//							$data['post_author'] = $user->ID;
-//							$data['post_status'] = 'pending'; // Change status to pending review.
-//						endif;
-//					elseif ( 'rejected' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
-//						$pending_review_email = true;
-//					else :
-//						$data['post_author'] = $user->ID;
-//					endif;
-//				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] ) :
-//					if ( 'publish' === $postarr['original_post_status'] ) :
-//						$pending_review_email = true;
-//					endif;
-//				endif;
-//			endif;
-//			if ( $pending_review_email ) :
-//				$owners = get_field( 'owner', $post_id, false );
-//
-//				foreach ( $owners as $owner_id ) :
-//
-//					$owner = get_userdata( $owner_id );
-//
-//					$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
-//					$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
-//					$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
-//					$message .= "Regards, \r\n";
-//					$message .= $blogname . "\r\n";
-//					$message .= get_home_url();
-//
-//					wp_mail( $author_user->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
-//
-//				endforeach;
-//				$data['post_author'] = $user->ID;
-//				$data['post_status'] = 'pending';
-//			endif;
-//
-//			$owners = get_field( 'owner', $post_id, false );
-//
-//			if ( is_array( $owners ) && ! in_array( (string) $user->ID, $owners, true ) ) :
-//
-//				if ( (int) $prev_post->post_author !== $data['post_author'] ) :
-//
-//					$old_author = get_userdata( $prev_post->post_author );
-//
-//					$message = 'Hi ' . $old_author->display_name . ",\r\n\r\n";
-//					$message .= 'This notice is to confirm that you are no longer the author of "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//					$message .= "Regards, \r\n";
-//					$message .= $blogname . "\r\n";
-//					$message .= get_home_url();
-//
-//					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
-//
-//					$new_author = get_userdata( $data['post_author'] );
-//
-//					$message = 'Hi ' . $new_author->display_name . ",\r\n\r\n";
-//					$message .= 'This notice is to confirm that you are now the the author of "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//					$message .= "You can edit it here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
-//					$message .= "Regards, \r\n";
-//					$message .= $blogname . "\r\n";
-//					$message .= get_home_url();
-//
-//					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
-//
-//				endif;
-//
-//			endif;
-//
-//		endif;
-//
-//		return $data;
-//	}
-//	add_action( 'wp_insert_post_data', 'reject_post_save', '99', 2 );
+	/**
+	 * Change text on publish button depending on varying factors.
+	 *
+	 * @param string $translation the translated text.
+	 * @param string $text the original text.
+	 * @author Warren Reeves
+	 */
+	function sbc_change_publish_button( $translation, $text ) {
+		global $post, $pagenow;
+		if ( ( 'Publish' === $text || 'Submit for Review' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) ) :
+			$owners = get_post_meta( $post->ID, 'owners_owner', false );
+			$approved_owners = get_post_meta( $post->ID, '_approve-list' );
+			if ( 'Publish' === $text ) :
+				$user = wp_get_current_user();
+				if ( null !== $post && 'pending' === get_post_status( $post->ID ) ) :
+					if ( is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
+						if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
+							return 'Update';
+						endif;
+						return 'Approve';
+					else :
+						return 'Update';
+					endif;
+				elseif ( in_array( $pagenow, array( 'post-new.php' ) ) ) :
+					return 'Submit for Review';
+				endif;
+			elseif ( 'Submit for Review' === $text ) :
+				$user = wp_get_current_user();
+				if ( null !== $post && is_admin() && 'pending' === get_post_status( $post->ID ) ) :
+					if ( in_array( (string) $user->ID, $owners, true ) ) :
+						if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
+							return 'Update';
+						endif;
+						return 'Approve';
+					endif;
+				endif;
+			endif;
+		endif;
+		return $translation;
+	}
+
+	/**
+	 * Send emails and set post status before the post is added to the database.
+	 *
+	 * @param array $data The data passed via the $_POST parameter.
+	 * @param array $postarr The post array which is ready to be added to the database.
+	 * @author Warren Reeves
+	 */
+	function sbc_reject_post_save( $data, $postarr ) {
+		if ( $this->sbc_can_user_moderate() ) :
+			$pending_review_email = false;
+			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+			if ( ! empty( $postarr ) && isset( $postarr['post_ID'] ) ) :
+				$post_id = $postarr['post_ID'];
+				$prev_post = get_post( $post_id );
+				$author_user = get_userdata( $prev_post->post_author );
+				$user = wp_get_current_user();
+				if ( isset( $postarr['reject'] ) ) : // Email the author and all other owners that x has rejected the post.
+					delete_post_meta( $post_id, '_approve-list' ); // Reset approve list.
+					$data['post_status'] = 'rejected'; // Change status to rejected.
+
+					$owners = get_post_meta( $post->ID, 'owners_owner', false );
+
+					$owners_author = array_merge( $owners, array( $author_user->ID ) );
+
+					foreach ( $owners_author as $owner_author_id ) :
+
+						$owner_author = get_userdata( $owner_author_id );
+
+						$message = 'Hi ' . $owner_author->display_name . ",\r\n\r\n";
+						$message .= 'This notice is to confirm that ' . $user->display_name . ' has rejected "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
+
+						if ( $owner_author_id === $author_user->ID ) :
+							$message .= "You can modify the post here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
+						else :
+							$message .= "You will be notified when the author has submitted the post for review again, you do not need to take any action now.\r\n\r\n";
+						endif;
+
+						$message .= "Regards, \r\n";
+						$message .= $blogname . "\r\n";
+						$message .= get_home_url();
+
+						wp_mail( $author_user->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
+
+					endforeach;
+
+				elseif ( isset( $postarr['publish'] ) ) :
+					if ( 'pending' === $postarr['original_post_status'] ) :
+						$owners = get_post_meta( $post->ID, 'owners_owner', false );
+
+						$approved_owners = get_post_meta( $post_id, '_approve-list' );
+
+						if ( ! empty( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
+
+							if ( ! in_array( (string) $user->ID, $approved_owners, true ) && in_array( (string) $user->ID, $owners, true ) ) :
+								add_post_meta( $post_id, '_approve-list', $user->ID ); // Add current user to aproove list is is not alread and is an owner.
+
+							endif;
+
+							$approved_owners = get_post_meta( $post_id, '_approve-list' );
+
+							$remaining_approve_owners = array_diff( $owners, $approved_owners ); // Check if all owners have approved.
+
+							if ( empty( $remaining_approve_owners ) ) :
+								delete_post_meta( $post_id, '_approve-list' );
+								// Email the author that x has approved and published the post.
+								$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
+								$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
+								$message .= "All of the owners have now approved this post it is now published, you can view it here:\r\n" . get_permalink( $post_id ). "\r\n\r\n";
+								$message .= "Regards, \r\n";
+								$message .= $blogname . "\r\n";
+								$message .= get_home_url();
+
+								wp_mail( $author_user->user_email, '[' . $blogname . '] Post published (' . $prev_post->post_title . ')', $message );
+							else :
+								$data['post_status'] = 'pending'; // Change status to pending review.
+								// Email the author that x/y/z has approved the post, and a/b/c are still outstanding.
+								$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
+								$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n" . get_edit_post_link( $prev_post->ID ) . "\r\n\r\n";
+
+								$message .= "The following owners have not yet approved your post:\r\n";
+								$remaining_approve_owners_names = array();
+								foreach ( $remaining_approve_owners as $remaining_owner_id ) :
+									$remaining_owner_user = get_userdata( $remaining_owner_id );
+
+									$remaining_approve_owners_names[] = $remaining_owner_user->display_name;
+								endforeach;
+								$message .= implode( ', ', $remaining_approve_owners_names ) . "\r\n\r\n";
+
+								$approved_owners = get_post_meta( $prev_post->ID, '_approve-list' );
+
+								if ( ! empty( $approved_owners ) ) :
+
+									$message .= "The following owners have now approved your post:\r\n";
+									$approved_owners_names = array();
+									foreach ( $approved_owners as $approved_owner_id ) :
+										$approved_owner_user = get_userdata( $approved_owner_id );
+
+										$approved_owners_names[] = $approved_owner_user->display_name;
+									endforeach;
+									$message .= implode( ', ', $approved_owners_names ) . "\r\n\r\n";
+
+								endif;
+
+								$message .= "Regards, \r\n";
+								$message .= $blogname . "\r\n";
+								$message .= get_home_url();
+
+								wp_mail( $author_user->user_email, '[' . $blogname . '] Post approved (' . $prev_post->post_title . ')', $message );
+							endif;
+						else :
+							$data['post_author'] = $user->ID;
+							$data['post_status'] = 'pending'; // Change status to pending review.
+						endif;
+					elseif ( 'rejected' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
+						$pending_review_email = true;
+					else :
+						$data['post_author'] = $user->ID;
+					endif;
+				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] ) :
+					if ( 'publish' === $postarr['original_post_status'] ) :
+						$pending_review_email = true;
+					endif;
+				endif;
+			endif;
+			if ( $pending_review_email ) :
+				$owners = get_post_meta( $post->ID, 'owners_owner', false );
+
+				foreach ( $owners as $owner_id ) :
+
+					$owner = get_userdata( $owner_id );
+
+					$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
+					$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
+					$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
+					$message .= "Regards, \r\n";
+					$message .= $blogname . "\r\n";
+					$message .= get_home_url();
+
+					wp_mail( $author_user->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
+
+				endforeach;
+				$data['post_author'] = $user->ID;
+				$data['post_status'] = 'pending';
+			endif;
+
+			$owners = get_post_meta( $post->ID, 'owners_owner', false );
+
+			if ( is_array( $owners ) && ! in_array( (string) $user->ID, $owners, true ) ) :
+
+				if ( (int) $prev_post->post_author !== $data['post_author'] ) :
+
+					$old_author = get_userdata( $prev_post->post_author );
+
+					$message = 'Hi ' . $old_author->display_name . ",\r\n\r\n";
+					$message .= 'This notice is to confirm that you are no longer the author of "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
+					$message .= "Regards, \r\n";
+					$message .= $blogname . "\r\n";
+					$message .= get_home_url();
+
+					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
+
+					$new_author = get_userdata( $data['post_author'] );
+
+					$message = 'Hi ' . $new_author->display_name . ",\r\n\r\n";
+					$message .= 'This notice is to confirm that you are now the the author of "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
+					$message .= "You can edit it here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
+					$message .= "Regards, \r\n";
+					$message .= $blogname . "\r\n";
+					$message .= get_home_url();
+
+					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
+
+				endif;
+
+			endif;
+
+		endif;
+
+		return $data;
+	}
 //
 //	/**
 //	 * Redirect to the edit.php on post save or publish.
@@ -668,17 +697,17 @@ class Border_Control_Admin {
 //		add_action('acf/save_post', 'after_governance_update');
 //	}
 //	add_action( 'acf/save_post', 'after_governance_update', 20 );
-//
-//	/**
-//	 * Add custom post types to post status.
-//	 *
-//	 * @param array $attachment_submitbox_metadata not sure if this is required.
-//	 * @author Warren Reeves
-//	 */
-//	function display_post_status( $attachment_submitbox_metadata ) {
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			global $post;
-	/*?>
+
+	/**
+	 * Add custom post types to post status.
+	 *
+	 * @param array $attachment_submitbox_metadata not sure if this is required.
+	 * @author Warren Reeves
+	 */
+	function sbc_display_post_status( $attachment_submitbox_metadata ) {
+		if ( $this->sbc_can_user_moderate() ) :
+			global $post;
+	?>
 			<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
 				<?php esc_html_e( 'Status:' ) ?>
 				<span id="post-status-display"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
@@ -693,11 +722,10 @@ class Border_Control_Admin {
 				}
 			});
 			</script>
-		<?php*/
-//		endif;
-//	};
-//	add_action( 'post_submitbox_misc_actions', 'display_post_status', 10, 1 );
-//
+		<?php
+		endif;
+	}
+
 //	/**
 //	 * Show noticies on post update, if errors occur.
 //	 *
@@ -711,7 +739,7 @@ class Border_Control_Admin {
 //			$screen = get_current_screen();
 //			if ( ! empty( $post ) && 'post' === $screen->base ) :
 //				$post_status = get_post_status( $post->ID );
-//				$owners = get_field( 'owner', $post->ID, false );
+//				$owners = get_post_meta( $post->ID, 'owners_owner', false );
 //				if ( 'auto-draft' !== $post_status  ) :
 //					if ( empty( $owners ) ) :
 					/*?>
@@ -861,7 +889,7 @@ class Border_Control_Admin {
 //				while ( $pending_query->have_posts() ) : $pending_query->the_post();
 //					$post_id = get_the_ID();
 //					$approved_owners = get_post_meta( $post_id, '_approve-list' );
-//					$owners = get_post_meta( $post_id, 'owner' );
+//					$owners = get_post_meta( $post->ID, 'owners_owner', false );
 //					$all_owners = $owners[0];
 //					$user = wp_get_current_user();
 //
