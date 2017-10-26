@@ -294,10 +294,10 @@ class Border_Control_Admin {
 		<?php
 	}
 	public function sbc_updated_options( $input ) {
-//		if ( ! function_exists( 'populate_roles' ) ) :
-//			require_once( ABSPATH . 'wp-admin/includes/schema.php' );
-//		endif;
-//		populate_roles();
+		if ( ! function_exists( 'populate_roles' ) ) :
+			require_once( ABSPATH . 'wp-admin/includes/schema.php' );
+		endif;
+		populate_roles();
 
 		$permissions = array();
 
@@ -309,14 +309,14 @@ class Border_Control_Admin {
 			$permissions[] = $post_type_object->cap->publish_posts;
 		endforeach;
 
-		//loop through all roles
+		//loop through all_roles ^tm
 		//if not in roles
 			//remove capabilities from role
 		//else
 			//add capabilities to role
 
 
-		//loop through all users
+		//loop through all_users ^tm
 		//if user role is not in roles and user is not in users
 			//remove capabilities from user
 		//else
