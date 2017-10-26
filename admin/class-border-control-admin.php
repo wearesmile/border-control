@@ -242,6 +242,77 @@ class Border_Control_Admin {
 
 	}
 
+	public function sbc_owners_add_meta_box() {
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		add_meta_box(
+			'owners-owners',
+			__( 'Owners', 'owners' ),
+			array( $this, 'sbc_owners_html' ),
+			$post_types,
+			'side',
+			'high'
+		);
+	}
+
+	public function sbc_owners_html( $post ) {
+		wp_nonce_field( '_owners_nonce', 'owners_nonce' );
+
+		$options = get_option( 'sbc_settings' );
+
+		$users = ( isset( $options['sbc_users'] ) ) ? $options['sbc_users'] : array();
+		$roles = ( isset( $options['sbc_roles'] ) ) ? $options['sbc_roles'] : array();
+
+		if ( empty( $roles ) ) :
+			$role_users = array();
+		else :
+			$args = array(
+				'role__in'     => $roles,
+				'exclude'      => $users,
+			);
+			$role_users = get_users( $args );
+		endif;
+
+		$args = array(
+			'include'      => $users,
+		);
+		$user_users = get_users( $args );
+
+		$possible_owners = array_unique( array_merge( $role_users, $user_users ), SORT_REGULAR );
+
+		$selected_users = get_post_meta( $post->ID, 'owners_owner', false );
+		?>
+			<label for="owners_owner" class="screen-reader-text"><?php _e( 'Owners', 'owners' ); ?></label>
+			<select name="owners_owner[]" id="owners_owner" class="select2" multiple="multiple">
+				<?php foreach ( $possible_owners as $possible_owner ) : ?>
+					<option value="<?php esc_attr_e( $possible_owner->ID ); ?>"
+						<?php
+						esc_attr_e( ( in_array( $possible_owner->ID, $selected_users ) ) ? 'selected' : '' );
+						?>><?php esc_html_e( $possible_owner->user_nicename ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		<?php
+	}
+
+	public function sbc_owners_save( $post_id ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+		if ( ! isset( $_POST['owners_nonce'] ) || ! wp_verify_nonce( $_POST['owners_nonce'], '_owners_nonce' ) ) return;
+		if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+		$meta_key = 'owners_owner';
+
+		if ( isset( $_POST['owners_owner'] ) ) :
+			if ( is_array( $_POST['owners_owner'] ) ) :
+				delete_post_meta( $post_id, $meta_key);
+				foreach ( $_POST['owners_owner'] as $owner ) :
+					add_post_meta( $post_id, $meta_key, $owner );
+				endforeach;
+			else :
+				update_post_meta( $post_id, $meta_key, esc_attr( $_POST['owners_owner'] ) );
+			endif;
+		endif;
+	}
+
 	private function sbc_can_user_moderate() {
 		$options = get_option( 'sbc_settings' );
 		$user_id = get_current_user_id();
@@ -281,12 +352,10 @@ class Border_Control_Admin {
 	public function sbc_reject_submit_box() {
 		global $post;
 
-		var_dump($this->sbc_can_user_moderate());
-
 		if ( $this->sbc_can_user_moderate() ) :
-			$owners = get_field( 'owner', $post->ID, false );
-			$user = wp_get_current_user();
-			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) && 'pending' === $post->post_status ) :
+			$owners = get_post_meta( $post->ID, 'owners_owner', false );
+			$user_id = get_current_user_id();
+			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) && 'pending' === $post->post_status ) :
 				?>
 				<div class="reject-action" style="float: left; margin-right: 10px;">
 					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
@@ -295,7 +364,7 @@ class Border_Control_Admin {
 			endif;
 		endif;
 	}
-//
+
 //	/**
 //	 * Change text on publish button depending on varying factors.
 //	 *
@@ -1023,7 +1092,7 @@ class Border_Control_Admin {
 		if ( ! is_admin() ) :
 			return false;
 		endif;
-		if ( 'edit' !== $_GET['action'] ) :
+		if ( ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) :
 			return false;
 		endif;
 
