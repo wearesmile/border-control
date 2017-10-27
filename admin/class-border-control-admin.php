@@ -785,83 +785,85 @@ class Border_Control_Admin {
 	 */
 	function sbc_governence_noticies() {
 		global $post, $post_types;
-		$user = wp_get_current_user();
-		$screen = get_current_screen();
-		if ( ! empty( $post ) && 'post' === $screen->base ) :
-			$post_status = get_post_status( $post->ID );
-			$owners = get_post_meta( $post->ID, 'owners_owner', false );
-			if ( 'auto-draft' !== $post_status  ) :
-				if ( empty( $owners ) ) :
-				?>
-					<div class="notice notice-error">
-							<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
-					</div>
-				<?php
-				elseif ( in_array( $screen->id, $post_types, true ) && $post_status && ! empty( $owners ) ) :
-					$approved_owners = get_post_meta( $post->ID, '_approve-list' );
-					$remaining_approve_owners = array_diff( $owners, $approved_owners );
-					if ( 'pending' === get_post_status( $post->ID ) && count( $remaining_approve_owners ) ) :
-						$user_has_approved = false;
-						?>
-						<div class="notice notice-info">
-							<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
-							<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
-								<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
-							<?php else : ?>
-								<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
-							<p><?php
-							endif;
-							echo esc_html( ' Pending review by ' );
-							$i = 0;
-							$len = count( $remaining_approve_owners );
-							$penultimate = $len - 2;
-							$last = $len - 1;
-
-							if ( in_array( (string) $user->ID, $owners, true ) ) :
-								$user_has_approved = true;
-							endif;
-
-							foreach ( $remaining_approve_owners as $owner_id ) :
-								echo '<b>';
-								if ( (string) $owner_id === (string) $user->ID ) :
-									echo '<u>you</u>';
-									$user_has_approved = false;
-								else :
-									$owner = get_userdata( $owner_id );
-									esc_html_e( $owner->display_name );
-								endif;
-								echo '</b>';
-								if ( $i !== $last ) :
-									if ( $i === $penultimate ) :
-										esc_html_e( ' & ' );
-									else :
-										esc_html_e( ', ' );
-									endif;
-								endif;
-								$i++;
-							endforeach;
-							esc_html_e( '.' );
-							?></p>
+		if ( $this->sbc_is_controlled_cpt() ) :
+			$user = wp_get_current_user();
+			$screen = get_current_screen();
+			if ( ! empty( $post ) && 'post' === $screen->base ) :
+				$post_status = get_post_status( $post->ID );
+				$owners = get_post_meta( $post->ID, 'owners_owner', false );
+				if ( 'auto-draft' !== $post_status  ) :
+					if ( empty( $owners ) ) :
+					?>
+						<div class="notice notice-error">
+								<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
 						</div>
-						<?php if ( $user_has_approved ) : ?>
-							<div class="notice notice-success">
-									<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
-							</div>
-						<?php endif; ?>
-						<?php
-					endif;
-					if ( 'pending' === get_post_status( $post->ID ) ) :
-						$original_id = get_post_meta( $post->ID, 'original', true );
+					<?php
+					elseif ( in_array( $screen->id, $post_types, true ) && $post_status && ! empty( $owners ) ) :
+						$approved_owners = get_post_meta( $post->ID, '_approve-list' );
+						$remaining_approve_owners = array_diff( $owners, $approved_owners );
+						if ( 'pending' === get_post_status( $post->ID ) && count( $remaining_approve_owners ) ) :
+							$user_has_approved = false;
+							?>
+							<div class="notice notice-info">
+								<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
+								<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
+									<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
+								<?php else : ?>
+									<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
+								<p><?php
+								endif;
+								echo esc_html( ' Pending review by ' );
+								$i = 0;
+								$len = count( $remaining_approve_owners );
+								$penultimate = $len - 2;
+								$last = $len - 1;
 
-						if ( $original_id ) :
-							$original_id = (int) $original_id;
-							$original_post = get_post( $original_id );
-							if ( 'publish' === $original_post->post_status ) :
-								?>
+								if ( in_array( (string) $user->ID, $owners, true ) ) :
+									$user_has_approved = true;
+								endif;
+
+								foreach ( $remaining_approve_owners as $owner_id ) :
+									echo '<b>';
+									if ( (string) $owner_id === (string) $user->ID ) :
+										echo '<u>you</u>';
+										$user_has_approved = false;
+									else :
+										$owner = get_userdata( $owner_id );
+										esc_html_e( $owner->display_name );
+									endif;
+									echo '</b>';
+									if ( $i !== $last ) :
+										if ( $i === $penultimate ) :
+											esc_html_e( ' & ' );
+										else :
+											esc_html_e( ', ' );
+										endif;
+									endif;
+									$i++;
+								endforeach;
+								esc_html_e( '.' );
+								?></p>
+							</div>
+							<?php if ( $user_has_approved ) : ?>
 								<div class="notice notice-success">
-									<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
+										<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
 								</div>
-								<?php
+							<?php endif; ?>
+							<?php
+						endif;
+						if ( 'pending' === get_post_status( $post->ID ) ) :
+							$original_id = get_post_meta( $post->ID, 'original', true );
+
+							if ( $original_id ) :
+								$original_id = (int) $original_id;
+								$original_post = get_post( $original_id );
+								if ( 'publish' === $original_post->post_status ) :
+									?>
+									<div class="notice notice-success">
+										<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
+									</div>
+									<?php
+								endif;
 							endif;
 						endif;
 					endif;
@@ -875,28 +877,26 @@ class Border_Control_Admin {
 	 *
 	 * @author Warren Reeves
 	 */
-//	function awaiting_review_approval_widgets() {
-//		global $wp_meta_boxes;
-//
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			wp_add_dashboard_widget(
-//				'pending_review_widget', // Widget slug.
-//				'Pending Review', // Title.
-//				'awaiting_review_approval_function' // Display function.
-//			);
-//
-//			$dashboard = $wp_meta_boxes['dashboard']['normal']['core'];
-//
-//			$my_widget = array( 'pending_review_widget' => $dashboard['pending_review_widget'] );
-//			unset( $dashboard['pending_review_widget'] );
-//
-//			$sorted_dashboard = array_merge( $my_widget, $dashboard );
-//			$wp_meta_boxes['dashboard']['normal']['core'] = $sorted_dashboard;
-//		endif;
-//
-//	}
-//	add_action( 'wp_dashboard_setup', 'awaiting_review_approval_widgets' );
-//
+	function sbc_awaiting_review_approval_widgets() {
+		global $wp_meta_boxes;
+		if ( $this->sbc_is_controlled_cpt() ) :
+			wp_add_dashboard_widget(
+				'pending_review_widget', // Widget slug.
+				'Pending Review', // Title.
+				'awaiting_review_approval_function' // Display function.
+			);
+
+			$dashboard = $wp_meta_boxes['dashboard']['normal']['core'];
+
+			$my_widget = array( 'pending_review_widget' => $dashboard['pending_review_widget'] );
+			unset( $dashboard['pending_review_widget'] );
+
+			$sorted_dashboard = array_merge( $my_widget, $dashboard );
+			$wp_meta_boxes['dashboard']['normal']['core'] = $sorted_dashboard;
+		endif;
+
+	}
+
 //	/**
 //	 * Show all of the posts which the user is an owner of, this may require limiting.
 //	 *
