@@ -116,6 +116,25 @@ class Border_Control_Admin {
 
 	public function sbc_settings_init() {
 
+				$options = get_option( 'sbc_settings' );
+				?>
+				This user can<?php
+
+
+					$permissions = array();
+
+					foreach ( $options['sbc_post_type'] as $post_type ) :
+						$post_type_object = get_post_type_object( $post_type );
+						$permissions[] = $post_type_object->cap->publish_posts;
+					endforeach;
+
+					foreach ( $permissions as $permission ) :
+						if ( ! current_user_can( $permission ) ) :
+							echo ' not';
+						endif;
+					endforeach;
+				?> publish border controlled posts.<?php
+
 		register_setting( 'borderControlPage', 'sbc_settings', array( $this, 'sbc_updated_options' ) );
 
 		add_settings_section(
@@ -235,7 +254,6 @@ class Border_Control_Admin {
 				do_settings_sections( 'borderControlPage' );
 				submit_button();
 				?>
-
 			</form>
 		</div>
 		<?php
@@ -294,6 +312,7 @@ class Border_Control_Admin {
 		<?php
 	}
 	public function sbc_updated_options( $input ) {
+		global $wp_roles;
 		if ( ! function_exists( 'populate_roles' ) ) :
 			require_once( ABSPATH . 'wp-admin/includes/schema.php' );
 		endif;
@@ -301,28 +320,41 @@ class Border_Control_Admin {
 
 		$permissions = array();
 
-		$roles = $input['sbc_roles'];
-		$users = $input['sbc_users'];
+		$selected_roles = ( isset( $input['sbc_roles'] ) ) ? $input['sbc_roles'] : array();
+		$selected_users = ( isset( $input['sbc_users'] ) ) ? $input['sbc_users'] : array();
 
 		foreach ( $input['sbc_post_type'] as $post_type ) :
 			$post_type_object = get_post_type_object( $post_type );
 			$permissions[] = $post_type_object->cap->publish_posts;
 		endforeach;
 
-		//loop through all_roles ^tm
-		//if not in roles
-			//remove capabilities from role
-		//else
-			//add capabilities to role
 
+		$roles = $wp_roles->get_names();
+		foreach ( $roles as $role => $name ) :// Loop through all_roles.
+			if ( in_array( $role, $selected_roles, true ) ) :// If in roles.
+				foreach ( $permissions as $permission ) :
+					$wp_roles->add_cap( $role, $permission );// Add capabilities to role.
+				endforeach;
+			else :// Else.
+				foreach ( $permissions as $permission ) :
+					$wp_roles->remove_cap( $role, $permission );// Remove capabilities from role.
+				endforeach;
+			endif;
+		endforeach;
 
-		//loop through all_users ^tm
-		//if user role is not in roles and user is not in users
-			//remove capabilities from user
-		//else
-			//add capabilities to user
-
-		die();
+		$users = get_users();
+		foreach ( $users as $user ) :// Loop through all_users.
+			if ( ! in_array( (string) $user->ID, $selected_users, true ) && empty( array_intersect( $user->roles, $selected_roles ) ) ) :// If user role is not in roles and user is not in users.
+				foreach ( $permissions as $permission ) :
+					$user->remove_cap( $permission );// Remove capabilities from user.
+				endforeach;
+			else :// Else.
+				foreach ( $permissions as $permission ) :
+					$user->add_cap( $permission );// Add capabilities to user.
+				endforeach;
+			endif;
+		endforeach;
+		return $input;
 	}
 
 	public function sbc_owners_save( $post_id ) {

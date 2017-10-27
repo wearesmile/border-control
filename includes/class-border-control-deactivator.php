@@ -30,7 +30,10 @@ class Border_Control_Deactivator {
 	 * @since    1.0.0
 	 */
 	public static function deactivate() {
-
+		if ( ! function_exists( 'populate_roles' ) ) :
+			require_once( ABSPATH . 'wp-admin/includes/schema.php' );
+		endif;
+		populate_roles();
 	}
 
 }

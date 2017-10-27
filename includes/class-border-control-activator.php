@@ -30,7 +30,10 @@ class Border_Control_Activator {
 	 * @since    1.0.0
 	 */
 	public static function activate() {
-
+		if ( ! function_exists( 'populate_roles' ) ) :
+			require_once( ABSPATH . 'wp-admin/includes/schema.php' );
+		endif;
+		populate_roles();
 	}
 
 }
