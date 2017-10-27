@@ -458,7 +458,7 @@ class Border_Control_Admin {
 	 * @param string $text the original text.
 	 * @author Warren Reeves
 	 */
-	function sbc_change_publish_button( $translation, $text ) {
+	public function sbc_change_publish_button( $translation, $text ) {
 		global $post, $pagenow;
 		if ( $this->sbc_is_controlled_cpt() ) :
 			if ( ( 'Publish' === $text || 'Submit for Review' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) ) :
@@ -501,7 +501,7 @@ class Border_Control_Admin {
 	 * @param array $postarr The post array which is ready to be added to the database.
 	 * @author Warren Reeves
 	 */
-	function sbc_reject_post_save( $data, $postarr ) {
+	public function sbc_reject_post_save( $data, $postarr ) {
 		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 		if ( $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
@@ -676,81 +676,80 @@ class Border_Control_Admin {
 		return $data;
 	}
 
-//	/**
-//	 * Redirect to the edit.php on post save or publish.
-//	 *
-//	 * @param string $location The locaiton to redirect to.
-//	 */
-//	function after_governance_update( $post_id ) {
-//
-//		global $wpdb;
-//
-//		// If this is just a revision, don't send the email.
-//		if ( wp_is_post_revision( $post_id ) ) :
-//			return;
-//		endif;
-//
-//		if ( 'publish' !== get_post_status( $post_id ) ) :
-//			return;
-//		endif;
-//
-//		if ( ! get_post_meta( $post_id, 'original', true ) ) :
-//			return;
-//		endif;
-//
-//		// Unhook this function so it doesn't loop infinitely.
-//		remove_action('acf/save_post', 'after_governance_update');
-//
-//		wp_update_post(
-//			array(
-//				'ID' => $post_id,
-//				'post_status' => 'pending',
-//			)
-//		);
-//
-//		$draft_post = get_post( $post_id );
-//
-//		$original_id = get_post_meta( $post_id, 'original', true );
-//		$new_post_id = $original_id;
-//		$original_post = get_post( $original_id );
-//
-//		$original_post_args = array(
-//			'ID'			 => $original_id,
-//			'comment_status' => $draft_post->comment_status,
-//			'ping_status'    => $draft_post->ping_status,
-//			'post_name'		 => $draft_post->post_name,
-//			'post_author'    => $draft_post->post_author,
-//			'post_content'   => $draft_post->post_content,
-//			'post_excerpt'   => $draft_post->post_excerpt,
-//			'post_password'  => $draft_post->post_password,
-//			'post_title'     => $draft_post->post_title,
-//			'post_type'      => $draft_post->post_type,
-//			'to_ping'        => $draft_post->to_ping,
-//			'menu_order'     => $draft_post->menu_order,
-//		);
-//
-//		wp_update_post( $original_post_args );
-//
-//		// Get all current post terms and set them to the new post draft.
-//		$taxonomies = get_object_taxonomies( $original_post->post_type ); // Returns array of taxonomy names for post type, ex array("category", "post_tag");
-//		foreach ( $taxonomies as $taxonomy ) {
-//			$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
-//			wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
-//		}
-//
-//		// Duplicate all post meta just in two SQL queries.
-//		$custom_fields = get_post_custom( $post_id );
-//		foreach ( $custom_fields as $meta_key => $meta_value ) {
-//			if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
-//				continue;
-//			endif;
-//			update_post_meta( $new_post_id, $meta_key, $meta_value[0] );
-//		}
-//
-//		// Re-hook this function.
-//		add_action('acf/save_post', 'after_governance_update');
-//	}
-//	add_action( 'acf/save_post', 'after_governance_update', 20 );
+	/**
+	 * Redirect to the edit.php on post save or publish.
+	 *
+	 * @param string $location The locaiton to redirect to.
+	 */
+	public function sbc_after_governance_update( $post_id, $post, $update ) {
+
+		global $wpdb;
+
+		// If this is just a revision, don't send the email.
+		if ( wp_is_post_revision( $post_id ) ) :
+			return;
+		endif;
+
+		if ( 'publish' !== get_post_status( $post_id ) ) :
+			return;
+		endif;
+
+		if ( ! get_post_meta( $post_id, 'original', true ) ) :
+			return;
+		endif;
+
+		// Unhook this function so it doesn't loop infinitely.
+		remove_action('acf/save_post', 'sbc_after_governance_update');
+
+		wp_update_post(
+			array(
+				'ID' => $post_id,
+				'post_status' => 'pending',
+			)
+		);
+
+		$draft_post = get_post( $post_id );
+
+		$original_id = get_post_meta( $post_id, 'original', true );
+		$new_post_id = $original_id;
+		$original_post = get_post( $original_id );
+
+		$original_post_args = array(
+			'ID'			 => $original_id,
+			'comment_status' => $draft_post->comment_status,
+			'ping_status'    => $draft_post->ping_status,
+			'post_name'		 => $draft_post->post_name,
+			'post_author'    => $draft_post->post_author,
+			'post_content'   => $draft_post->post_content,
+			'post_excerpt'   => $draft_post->post_excerpt,
+			'post_password'  => $draft_post->post_password,
+			'post_title'     => $draft_post->post_title,
+			'post_type'      => $draft_post->post_type,
+			'to_ping'        => $draft_post->to_ping,
+			'menu_order'     => $draft_post->menu_order,
+		);
+
+		wp_update_post( $original_post_args );
+
+		// Get all current post terms and set them to the new post draft.
+		$taxonomies = get_object_taxonomies( $original_post->post_type ); // Returns array of taxonomy names for post type, ex array("category", "post_tag");
+		foreach ( $taxonomies as $taxonomy ) {
+			$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
+			wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
+		}
+
+		// Duplicate all post meta just in two SQL queries.
+		$custom_fields = get_post_custom( $post_id );
+		foreach ( $custom_fields as $meta_key => $meta_value ) {
+			if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
+				continue;
+			endif;
+			update_post_meta( $new_post_id, $meta_key, $meta_value[0] );
+		}
+
+		// Re-hook this function.
+		add_action('wp_insert_post', 'sbc_after_governance_update');
+	}
 
 	/**
 	 * Add custom post types to post status.
@@ -758,7 +757,7 @@ class Border_Control_Admin {
 	 * @param array $attachment_submitbox_metadata not sure if this is required.
 	 * @author Warren Reeves
 	 */
-	function sbc_display_post_status( $attachment_submitbox_metadata ) {
+	public function sbc_display_post_status( $attachment_submitbox_metadata ) {
 		global $post;
 	?>
 		<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
@@ -783,9 +782,13 @@ class Border_Control_Admin {
 	 *
 	 * @author Warren Reeves
 	 */
-	function sbc_governence_noticies() {
-		global $post, $post_types;
+	public function sbc_governence_noticies() {
+		global $post;
 		if ( $this->sbc_is_controlled_cpt() ) :
+
+			$options = get_option( 'sbc_settings' );
+			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+
 			$user = wp_get_current_user();
 			$screen = get_current_screen();
 			if ( ! empty( $post ) && 'post' === $screen->base ) :
@@ -877,7 +880,7 @@ class Border_Control_Admin {
 	 *
 	 * @author Warren Reeves
 	 */
-	function sbc_awaiting_review_approval_widgets() {
+	public function sbc_awaiting_review_approval_widgets() {
 		global $wp_meta_boxes;
 		if ( $this->sbc_is_controlled_cpt() ) :
 			wp_add_dashboard_widget(
@@ -897,84 +900,84 @@ class Border_Control_Admin {
 
 	}
 
-//	/**
-//	 * Show all of the posts which the user is an owner of, this may require limiting.
-//	 *
-//	 * @author Warren Reeves
-//	 */
-//	function awaiting_review_approval_function() {
-//		global $wpdb;
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			$user = wp_get_current_user();
-//
-//			$args = array(
-//				'post_type' => 'any',
-//				'post_status' => array( 'pending', 'approval' ),
-//				'numberposts' => '-1', // Unlimited.
-//				'meta_query' => array(
-//					'relation' => 'AND',
-//					array(
-//						'key' => 'owner',
-//						'value' => ':"'. $user->ID .'";',
-//						'compare' => 'LIKE',
-//					),
-//					array(
-//						'key' => 'owner',
-//						'value' => $user->ID,
-//						'compare' => 'LIKE',
-//					),
-//				),
-//			);
-//			$pending_query = new WP_Query( $args );
-//			if ( $pending_query->have_posts() ) :
-//
-//				echo '<table class="wp-list-table widefat fixed striped">
-//				<thead><tr>
-//					<th scope="col">Title</th>
-//					<th scope="col">Author</th>
-//					<th scope="col">Owners</th>
-//				</tr></thead><tbody>';
-//
-//				while ( $pending_query->have_posts() ) : $pending_query->the_post();
-//					$post_id = get_the_ID();
-//					$approved_owners = get_post_meta( $post_id, '_approve-list' );
-//					$owners = get_post_meta( $post->ID, 'owners_owner', false );
-//					$all_owners = $owners[0];
-//					$user = wp_get_current_user();
-//
-//					$post_title = get_the_title();
-//					$post_type = get_post_type_object( get_post_type() );
-//					if ( '' === $post_title ) :
-//						$post_title = '<i>[Untitled]</i>';
-//					endif;
-//
-//					echo '<tr><td><a href="' . esc_url( get_edit_post_link( get_the_ID() ) ) . '" title="Read: ' .
-//						esc_attr( $post_title ).'" ><b>' . esc_html( $post_title ) .'</b> - ' . esc_html( $post_type->label ) . '</a></td>';
-//
-//					echo '<td>'. esc_html( get_the_author() ) .'</td>';
-//
-//					echo '<td><ul style="margin:0;">';
-//					foreach ( $all_owners as $owner_id ) {
-//						echo '<li';
-//						if ( in_array( (string) $owner_id, $approved_owners, true ) ) :
-//							echo ' title="Awaiting Review"><i class="fa fa-check-circle" style="color: mediumseagreen;"></i>';
-//						else :
-//							echo ' title="Approved"><i class="fa fa-exclamation-circle" style="color: orange;"></i>';
-//						endif;
-//						echo ' ';
-//						if ( $owner_id === $user->ID ) :
-//							echo '<b>';
-//						endif;
-//						echo esc_html( get_the_author_meta( 'display_name', $owner_id ) );
-//						if ( $owner_id === $user->ID ) :
-//							echo '</b>';
-//						endif;
-//						echo '</li>';
-//					}
-//					echo '</ul></td>';
-//				endwhile;
-//				echo '</tbody></table>';
-				/*?>
+	/**
+	 * Show all of the posts which the user is an owner of, this may require limiting.
+	 *
+	 * @author Warren Reeves
+	 */
+	public function awaiting_review_approval_function() {
+		global $wpdb;
+		if ( ! current_user_can( 'manage_options' ) ) :
+			$user = wp_get_current_user();
+
+			$args = array(
+				'post_type' => 'any',
+				'post_status' => array( 'pending', 'approval' ),
+				'numberposts' => '-1', // Unlimited.
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key' => 'owner',
+						'value' => ':"' . $user->ID . '";',
+						'compare' => 'LIKE',
+					),
+					array(
+						'key' => 'owner',
+						'value' => $user->ID,
+						'compare' => 'LIKE',
+					),
+				),
+			);
+			$pending_query = new WP_Query( $args );
+			if ( $pending_query->have_posts() ) :
+
+				echo '<table class="wp-list-table widefat fixed striped">
+				<thead><tr>
+					<th scope="col">Title</th>
+					<th scope="col">Author</th>
+					<th scope="col">Owners</th>
+				</tr></thead><tbody>';
+
+				while ( $pending_query->have_posts() ) : $pending_query->the_post();
+					$post_id = get_the_ID();
+					$approved_owners = get_post_meta( $post_id, '_approve-list' );
+					$owners = get_post_meta( $post->ID, 'owners_owner', false );
+					$all_owners = $owners[0];
+					$user = wp_get_current_user();
+
+					$post_title = get_the_title();
+					$post_type = get_post_type_object( get_post_type() );
+					if ( '' === $post_title ) :
+						$post_title = '<i>[Untitled]</i>';
+					endif;
+
+					echo '<tr><td><a href="' . esc_url( get_edit_post_link( get_the_ID() ) ) . '" title="Read: ' .
+						esc_attr( $post_title ).'" ><b>' . esc_html( $post_title ) .'</b> - ' . esc_html( $post_type->label ) . '</a></td>';
+
+					echo '<td>'. esc_html( get_the_author() ) .'</td>';
+
+					echo '<td><ul style="margin:0;">';
+					foreach ( $all_owners as $owner_id ) {
+						echo '<li';
+						if ( in_array( (string) $owner_id, $approved_owners, true ) ) :
+							echo ' title="Awaiting Review"><i class="fa fa-check-circle" style="color: mediumseagreen;"></i>';
+						else :
+							echo ' title="Approved"><i class="fa fa-exclamation-circle" style="color: orange;"></i>';
+						endif;
+						echo ' ';
+						if ( $owner_id === $user->ID ) :
+							echo '<b>';
+						endif;
+						echo esc_html( get_the_author_meta( 'display_name', $owner_id ) );
+						if ( $owner_id === $user->ID ) :
+							echo '</b>';
+						endif;
+						echo '</li>';
+					}
+					echo '</ul></td>';
+				endwhile;
+				echo '</tbody></table>';
+				?>
 					<style>
 						#dashboard-widgets #pending_review_widget.postbox .inside {
 							padding: 0;
@@ -984,182 +987,15 @@ class Border_Control_Admin {
 							border: 0;
 						}
 					</style>
-				<?php*/
-//				wp_reset_postdata();
-//			else :
-			/*?>
+				<?php
+				wp_reset_postdata();
+			else :
+			?>
 				<p><?php echo esc_html( 'You have nothing to review.' ); ?></p>
-			<?php*/
-//			endif;
-//		endif;
-//	}
-//
-//	/**
-//	 * Limit the output in the owner selector in ACF.
-//	 *
-//	 * @param string $args Query arguments.
-//	 * @param string $field The field being called.
-//	 * @param string $post_id The post being updated.
-//	 * @author Warren Reeves
-//	 */
-//	function acf_exclude_this_user_query( $args, $field, $post_id ) {
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			$user = wp_get_current_user();
-//			$args = array(
-//				'role__in' => array( 'dia_admin', 'dia_editor', 'sr_admin', 'sr_editor', 'guardian' ),
-//			);
-//			if ( array_intersect( array( 'dia_editor', 'sr_editor' ), $user->roles ) ) :
-//				$args['exclude'] = $user->ID;
-//			endif;
-//			return $args;
-//		endif;
-//	}
-//	add_filter( 'acf/fields/user/query', 'acf_exclude_this_user_query', 10, 3 );
-//
-//	/**
-//	 * Filter out updates to a posts owners.
-//	 *
-//	 * @param string $value The value to be updated.
-//	 * @param string $post_id The post being updated.
-//	 * @param string $field The field being updated.
-//	 * @author Warren Reeves
-//	 */
-//	function governance_meta_update( $value, $post_id, $field ) {
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			$user = wp_get_current_user();
-//			$user_id = (string) $user->ID;
-//			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-//			$saved_post = get_post( $post_id );
-//
-//			$prev_value = get_field( 'owner', $post_id, false );
-//			if ( null === $prev_value ) : // If is a new post set previous value as an empty array.
-//				$prev_value = array();
-//			elseif ( $prev_value === $value ) :
-//				return $value;
-//			endif;
-//
-//			// Get all users who have been removed from the owners list.
-//			$removed_value = array_diff( $prev_value, $value );
-//
-//			// If the current user is an editor and there are removed owners, add them other owners back in.
-//			if ( array_intersect( array( 'dia_editor', 'sr_editor' ), $user->roles ) && ! empty( $removed_value ) ) :
-//				$true_removed = array();
-//				if ( in_array( $user_id, $removed_value, true ) ) :
-//					$true_removed[] = $user_id;
-//				endif;
-//				$add_removed_value = array_diff( $removed_value, $true_removed );
-//				$value = array_merge( $value, $add_removed_value );
-//
-//				$removed_value = array( $user_id );
-//
-//			endif;
-//
-//			$removed_names = array();
-//
-//			// Loop through removed owners.
-//			foreach ( $removed_value as $removed_user_id ) {
-//				$removed_user = get_userdata( $removed_user_id );
-//
-//				$removed_names[] = $removed_user->display_name;
-//
-//				delete_post_meta( $post_id, '_approve-list', $removed_user_id );
-//
-//				$message = 'Hi ' . $removed_user->display_name . ",\r\n\r\n";
-//				$message .= 'This notice is to confirm that you are no longer an owner of "' . $saved_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//				if ( current_user_can( 'dia_editor' ) || current_user_can( 'sr_editor' ) ) :
-//					$message .= "If you did not expect this then you can add yourself as an owner, here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
-//				else :
-//					$message .= "You can view it here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
-//				endif;
-//				$message .= "Regards, \r\n";
-//				$message .= $blogname . "\r\n";
-//				$message .= get_home_url();
-//
-//				wp_mail( $removed_user->user_email, '[' . $blogname . '] You have been removed as an owner (' . $saved_post->post_title . ')', $message );
-//
-//			}
-//
-//			$approved_owners = get_post_meta( $post_id, '_approve-list' );
-//
-//			// If meta _approve-list matches meta owner and post status is pending.
-//			// Set post status to published.
-//			if ( 'pending' === $saved_post->post_status && $approved_owners === $value ) :
-//				$published_post = array(
-//					'ID'           => $post_id,
-//					'post_status' => 'publish',
-//				);
-//				// Update the post into the database.
-//				wp_update_post( $published_post );
-//			else :
-//
-//				/* === Continue with notifying existing or new owners === */
-//
-//				$added_names = array();
-//
-//				// Get all users who have been added to the owners list.
-//				$added_value = array_diff( $value, $prev_value );
-//
-//				if ( array_intersect( array( 'dia_editor', 'sr_editor' ), $user->roles ) && ! empty( $added_value ) ) :
-//					$value = array_diff( $value, [ $user_id ] );
-//					$added_value = array_diff( $added_value, [ $user_id ] );
-//				endif;
-//
-//				// Loop through new owners.
-//				foreach ( $added_value as $added_user_id ) {
-//					$added_user = get_userdata( $added_user_id );
-//
-//					$added_names[] = $added_user->display_name;
-//
-//					$message = 'Hi ' . $added_user->display_name . ",\r\n\r\n";
-//					$message .= 'This notice is to confirm that you are now an owner of "' . $saved_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//					$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
-//					$message .= "Regards, \r\n";
-//					$message .= $blogname . "\r\n";
-//					$message .= get_home_url();
-//
-//					wp_mail( $added_user->user_email, '[' . $blogname . '] You have been added as an owner - Please Review (' . $saved_post->post_title . ')', $message );
-//				}
-//				$existing_owners = array_diff( $value, $added_value );
-//
-//				// Notify all other owners & author's of all changes in a single email  ( a/b/c have been removed, x/y/z have been added ).
-//				foreach ( $existing_owners as $existing_user_id ) {
-//					$existing_user = get_userdata( $existing_user_id );
-//
-//					$message = 'Hi ' . $existing_user->display_name . ",\r\n\r\n";
-//					$message .= 'This notice of changes to owners of "' . $saved_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-//
-//					if ( ! empty( $added_names ) ) :
-//						$message .= 'The following people are now owners of this post: ' . implode( ', ', $added_names ) . "\r\n\r\n";
-//					endif;
-//					if ( ! empty( $removed_names ) ) :
-//						$message .= 'The following people are no longer owners of this post: ' . implode( ', ', $removed_names ) . "\r\n\r\n";
-//					endif;
-//
-//					if ( ! in_array( (string) $existing_user_id, $approved_owners, true ) ) :
-//						$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
-//					endif;
-//					$message .= "Regards, \r\n";
-//					$message .= $blogname . "\r\n";
-//					$message .= get_home_url();
-//
-//					wp_mail( $existing_user->user_email, '[' . $blogname . '] Ownership Changes (' . $saved_post->post_title . ')', $message );
-//				}
-//			endif;
-//		endif;
-//
-//		if ( empty( $value ) ) :
-//			$draft_post = array(
-//				'ID'			=> $post_id,
-//				'post_status'	=> 'draft',
-//			);
-//			wp_update_post( $draft_post );
-//		endif;
-//
-//		return $value;
-//
-//	}
-//
-//	add_action( 'acf/update_value/name=owner', 'governance_meta_update', 10, 3 );
+			<?php
+			endif;
+		endif;
+	}
 
 	/**
 	 * Create draft when editing a post
