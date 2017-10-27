@@ -116,25 +116,6 @@ class Border_Control_Admin {
 
 	public function sbc_settings_init() {
 
-				$options = get_option( 'sbc_settings' );
-				?>
-				This user can<?php
-
-
-					$permissions = array();
-
-					foreach ( $options['sbc_post_type'] as $post_type ) :
-						$post_type_object = get_post_type_object( $post_type );
-						$permissions[] = $post_type_object->cap->publish_posts;
-					endforeach;
-
-					foreach ( $permissions as $permission ) :
-						if ( ! current_user_can( $permission ) ) :
-							echo ' not';
-						endif;
-					endforeach;
-				?> publish border controlled posts.<?php
-
 		register_setting( 'borderControlPage', 'sbc_settings', array( $this, 'sbc_updated_options' ) );
 
 		add_settings_section(
@@ -395,6 +376,44 @@ class Border_Control_Admin {
 		return false;
 	}
 
+	private function sbc_get_current_post_type() {
+		global $post, $typenow, $current_screen;
+		//we have a post so we can just get the post type from that
+		if ( $post && $post->post_type ) {
+			return $post->post_type;
+		}
+		//check the global $typenow - set in admin.php
+		elseif ( $typenow ) {
+			return $typenow;
+		}
+		//check the global $current_screen object - set in sceen.php
+		elseif ( $current_screen && $current_screen->post_type ) {
+			return $current_screen->post_type;
+		}
+		//check the post_type querystring
+		elseif ( isset( $_REQUEST['post_type'] ) ) {
+			return sanitize_key( $_REQUEST['post_type'] );
+		}
+		//lastly check if post ID is in query string
+		elseif ( isset( $_REQUEST['post'] ) ) {
+			return get_post_type( $_REQUEST['post'] );
+		}
+		//we do not know the post type!
+		return null;
+	}
+
+	private function sbc_is_controlled_cpt() {
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+
+		$post_type = $this->sbc_get_current_post_type();
+
+		if ( $post_type && in_array( $post_type, $post_types, true ) )
+			return true;
+
+		return false;
+	}
+
 	/**
 	 * Rejected post status.
 	 *
@@ -419,7 +438,7 @@ class Border_Control_Admin {
 	public function sbc_reject_submit_box() {
 		global $post;
 
-		if ( $this->sbc_can_user_moderate() ) :
+		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 			$owners = get_post_meta( $post->ID, 'owners_owner', false );
 			$user_id = get_current_user_id();
 			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) && 'pending' === $post->post_status ) :
@@ -441,31 +460,33 @@ class Border_Control_Admin {
 	 */
 	function sbc_change_publish_button( $translation, $text ) {
 		global $post, $pagenow;
-		if ( ( 'Publish' === $text || 'Submit for Review' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) ) :
-			$owners = get_post_meta( $post->ID, 'owners_owner', false );
-			$approved_owners = get_post_meta( $post->ID, '_approve-list' );
-			if ( 'Publish' === $text ) :
-				$user = wp_get_current_user();
-				if ( null !== $post && 'pending' === get_post_status( $post->ID ) ) :
-					if ( is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
-						if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
+		if ( $this->sbc_is_controlled_cpt() ) :
+			if ( ( 'Publish' === $text || 'Submit for Review' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) ) :
+				$owners = get_post_meta( $post->ID, 'owners_owner', false );
+				$approved_owners = get_post_meta( $post->ID, '_approve-list' );
+				if ( 'Publish' === $text ) :
+					$user = wp_get_current_user();
+					if ( null !== $post && 'pending' === get_post_status( $post->ID ) ) :
+						if ( is_array( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
+							if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
+								return 'Update';
+							endif;
+							return 'Approve';
+						else :
 							return 'Update';
 						endif;
-						return 'Approve';
-					else :
-						return 'Update';
+					elseif ( in_array( $pagenow, array( 'post-new.php' ) ) ) :
+						return 'Submit for Review';
 					endif;
-				elseif ( in_array( $pagenow, array( 'post-new.php' ) ) ) :
-					return 'Submit for Review';
-				endif;
-			elseif ( 'Submit for Review' === $text ) :
-				$user = wp_get_current_user();
-				if ( null !== $post && is_admin() && 'pending' === get_post_status( $post->ID ) ) :
-					if ( in_array( (string) $user->ID, $owners, true ) ) :
-						if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
-							return 'Update';
+				elseif ( 'Submit for Review' === $text ) :
+					$user = wp_get_current_user();
+					if ( null !== $post && is_admin() && 'pending' === get_post_status( $post->ID ) ) :
+						if ( in_array( (string) $user->ID, $owners, true ) ) :
+							if ( in_array( (string) $user->ID, $approved_owners, true ) ) :
+								return 'Update';
+							endif;
+							return 'Approve';
 						endif;
-						return 'Approve';
 					endif;
 				endif;
 			endif;
@@ -481,6 +502,7 @@ class Border_Control_Admin {
 	 * @author Warren Reeves
 	 */
 	function sbc_reject_post_save( $data, $postarr ) {
+		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 		if ( $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -653,7 +675,7 @@ class Border_Control_Admin {
 
 		return $data;
 	}
-//
+
 //	/**
 //	 * Redirect to the edit.php on post save or publish.
 //	 *
@@ -737,127 +759,122 @@ class Border_Control_Admin {
 	 * @author Warren Reeves
 	 */
 	function sbc_display_post_status( $attachment_submitbox_metadata ) {
-		if ( $this->sbc_can_user_moderate() ) :
-			global $post;
+		global $post;
 	?>
-			<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
-				<?php esc_html_e( 'Status:' ) ?>
-				<span id="post-status-display"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
-			</div>
+		<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
+			<?php esc_html_e( 'Status:' ) ?>
+			<span id="post-status-display"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
+		</div>
 
-			<script id="true_post_status">
-			jQuery(document).ready(function($) {
-				var $post_status_div = $( '.misc-pub-post-status' );
-				console.log($post_status_div);
-				if ( $post_status_div.length ) {
-					$post_status_div[0].remove();
-				}
-			});
-			</script>
-		<?php
+		<script id="true_post_status">
+		jQuery(document).ready(function($) {
+			var $post_status_div = $( '.misc-pub-post-status' );
+			console.log($post_status_div);
+			if ( $post_status_div.length ) {
+				$post_status_div[0].remove();
+			}
+		});
+		</script>
+	<?php
+	}
+
+	/**
+	 * Show noticies on post update, if errors occur.
+	 *
+	 * @author Warren Reeves
+	 */
+	function sbc_governence_noticies() {
+		global $post, $post_types;
+		$user = wp_get_current_user();
+		$screen = get_current_screen();
+		if ( ! empty( $post ) && 'post' === $screen->base ) :
+			$post_status = get_post_status( $post->ID );
+			$owners = get_post_meta( $post->ID, 'owners_owner', false );
+			if ( 'auto-draft' !== $post_status  ) :
+				if ( empty( $owners ) ) :
+				?>
+					<div class="notice notice-error">
+							<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
+					</div>
+				<?php
+				elseif ( in_array( $screen->id, $post_types, true ) && $post_status && ! empty( $owners ) ) :
+					$approved_owners = get_post_meta( $post->ID, '_approve-list' );
+					$remaining_approve_owners = array_diff( $owners, $approved_owners );
+					if ( 'pending' === get_post_status( $post->ID ) && count( $remaining_approve_owners ) ) :
+						$user_has_approved = false;
+						?>
+						<div class="notice notice-info">
+							<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
+							<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
+								<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
+							<?php else : ?>
+								<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
+							<p><?php
+							endif;
+							echo esc_html( ' Pending review by ' );
+							$i = 0;
+							$len = count( $remaining_approve_owners );
+							$penultimate = $len - 2;
+							$last = $len - 1;
+
+							if ( in_array( (string) $user->ID, $owners, true ) ) :
+								$user_has_approved = true;
+							endif;
+
+							foreach ( $remaining_approve_owners as $owner_id ) :
+								echo '<b>';
+								if ( (string) $owner_id === (string) $user->ID ) :
+									echo '<u>you</u>';
+									$user_has_approved = false;
+								else :
+									$owner = get_userdata( $owner_id );
+									esc_html_e( $owner->display_name );
+								endif;
+								echo '</b>';
+								if ( $i !== $last ) :
+									if ( $i === $penultimate ) :
+										esc_html_e( ' & ' );
+									else :
+										esc_html_e( ', ' );
+									endif;
+								endif;
+								$i++;
+							endforeach;
+							esc_html_e( '.' );
+							?></p>
+						</div>
+						<?php if ( $user_has_approved ) : ?>
+							<div class="notice notice-success">
+									<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
+							</div>
+						<?php endif; ?>
+						<?php
+					endif;
+					if ( 'pending' === get_post_status( $post->ID ) ) :
+						$original_id = get_post_meta( $post->ID, 'original', true );
+
+						if ( $original_id ) :
+							$original_id = (int) $original_id;
+							$original_post = get_post( $original_id );
+							if ( 'publish' === $original_post->post_status ) :
+								?>
+								<div class="notice notice-success">
+									<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
+								</div>
+								<?php
+							endif;
+						endif;
+					endif;
+				endif;
+			endif;
 		endif;
 	}
 
-//	/**
-//	 * Show noticies on post update, if errors occur.
-//	 *
-//	 * @author Warren Reeves
-//	 */
-//	function governence_noticies() {
-//		global $post, $post_types;
-//		if ( ! current_user_can( 'manage_options' ) ) :
-//			$screen = get_current_screen();
-//			$user = wp_get_current_user();
-//			$screen = get_current_screen();
-//			if ( ! empty( $post ) && 'post' === $screen->base ) :
-//				$post_status = get_post_status( $post->ID );
-//				$owners = get_post_meta( $post->ID, 'owners_owner', false );
-//				if ( 'auto-draft' !== $post_status  ) :
-//					if ( empty( $owners ) ) :
-					/*?>
-						<div class="notice notice-error">
-								<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
-						</div>
-					<?php*/
-//					elseif ( in_array( $screen->id, $post_types, true ) && $post_status && ! empty( $owners ) ) :
-//						$approved_owners = get_post_meta( $post->ID, '_approve-list' );
-//						$remaining_approve_owners = array_diff( $owners, $approved_owners );
-//						if ( 'pending' === get_post_status( $post->ID ) && count( $remaining_approve_owners ) ) :
-//							$user_has_approved = false;
-							/*?>
-							<div class="notice notice-info">
-								<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
-								<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
-									<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
-								<?php else : ?>
-									<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
-								<p><?php*/
-//								echo esc_html( ' Pending review by ' );
-//								$i = 0;
-//								$len = count( $remaining_approve_owners );
-//								$penultimate = $len - 2;
-//								$last = $len - 1;
-//
-//								if ( in_array( (string) $user->ID, $owners, true ) ) :
-//									$user_has_approved = true;
-//								endif;
-//
-//								foreach ( $remaining_approve_owners as $owner_id ) :
-//									echo '<b>';
-//									if ( (string) $owner_id === (string) $user->ID ) :
-//										echo '<u>you</u>';
-//										$user_has_approved = false;
-//									else :
-//										$owner = get_userdata( $owner_id );
-//										esc_html_e( $owner->display_name );
-//									endif;
-//									echo '</b>';
-//									if ( $i !== $last ) :
-//										if ( $i === $penultimate ) :
-//											esc_html_e( ' & ' );
-//										else :
-//											esc_html_e( ', ' );
-//										endif;
-//									endif;
-//									$i++;
-//								endforeach;
-//								echo esc_html( '.' );
-								/*?></p>
-							</div>
-							<?php if ( $user_has_approved ) : ?>
-								<div class="notice notice-success">
-										<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
-								</div>
-							<?php endif; ?>
-							<?php*/
-//						endif;
-//						if ( 'pending' === get_post_status( $post->ID ) ) :
-//							$original_id = get_post_meta( $post->ID, 'original', true );
-//
-//							if ( $original_id ) :
-//								$original_id = (int) $original_id;
-//								$original_post = get_post( $original_id );
-//								if ( 'publish' === $original_post->post_status ) :
-									/*?>
-									<div class="notice notice-success">
-										<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
-									</div>
-									<?php*/
-//								endif;
-//							endif;
-//						endif;
-//					endif;
-//				endif;
-//			endif;
-//		endif;
-//	}
-//	add_action( 'admin_notices', 'governence_noticies' );
-//
-//	/**
-//	 * Show metabox for a table of posts which the user is the owner of.
-//	 *
-//	 * @author Warren Reeves
-//	 */
+	/**
+	 * Show metabox for a table of posts which the user is the owner of.
+	 *
+	 * @author Warren Reeves
+	 */
 //	function awaiting_review_approval_widgets() {
 //		global $wp_meta_boxes;
 //
