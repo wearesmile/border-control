@@ -267,17 +267,22 @@ class Border_Control_Admin {
 		else :
 			$args = array(
 				'role__in'     => $roles,
-				'exclude'      => $users,
 			);
 			$role_users = get_users( $args );
 		endif;
 
-		$args = array(
-			'include'      => $users,
-		);
-		$user_users = get_users( $args );
+		if ( empty( $users ) ) :
+			$user_users = array();
+		else :
+			$args = array(
+				'include'      => $users,
+			);
+			$user_users = get_users( $args );
+		endif;
 
 		$possible_owners = array_unique( array_merge( $role_users, $user_users ), SORT_REGULAR );
+
+//		var_dump($possible_owners);
 
 		$selected_users = get_post_meta( $post->ID, 'owners_owner', false );
 		?>
