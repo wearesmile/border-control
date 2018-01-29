@@ -218,12 +218,12 @@ class Border_Control_Admin {
 	}
 
 
-	public function sbc_settings_section_callback(  ) {
+	public function sbc_settings_section_callback() {
 
 //		echo __( 'This section description', 'smile' );
 
 	}
-	public function sbc_options_page(  ) {
+	public function sbc_options_page() {
 
 		?>
 		<div class="wrap">
@@ -246,7 +246,7 @@ class Border_Control_Admin {
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		add_meta_box(
 			'owners-owners',
-			__( 'Owners', 'owners' ),
+			__( 'Post Moderators', 'owners' ),
 			array( $this, 'sbc_owners_html' ),
 			$post_types,
 			'side',
@@ -282,10 +282,9 @@ class Border_Control_Admin {
 
 		$possible_owners = array_unique( array_merge( $role_users, $user_users ), SORT_REGULAR );
 
-//		var_dump($possible_owners);
-
 		$selected_users = get_post_meta( $post->ID, 'owners_owner', false );
 		?>
+			<p><?php esc_html_e('Optionally limit this post to specific moderators from the site moderators.'); ?></p>
 			<label for="owners_owner" class="screen-reader-text"><?php _e( 'Owners', 'owners' ); ?></label>
 			<select name="owners_owner[]" id="owners_owner" class="select2" multiple="multiple">
 				<?php foreach ( $possible_owners as $possible_owner ) : ?>
@@ -508,6 +507,10 @@ class Border_Control_Admin {
 	 */
 	public function sbc_reject_post_save( $data, $postarr ) {
 		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
+		
+		if ( empty( $post ) )
+			return $data;
+		
 		if ( $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -704,7 +707,7 @@ class Border_Control_Admin {
 		endif;
 
 		// Unhook this function so it doesn't loop infinitely.
-		remove_action('acf/save_post', 'sbc_after_governance_update');
+		remove_action('wp_insert_post', 'sbc_after_governance_update');
 
 		wp_update_post(
 			array(
