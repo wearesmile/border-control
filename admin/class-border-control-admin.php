@@ -1025,6 +1025,7 @@ class Border_Control_Admin {
 		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
 
 			$original = get_post_meta( $post_id, 'original', true );
+			delete_post_meta( $post_id, 'is_under_review' );
 
 			if ( $original ) :
 				return false;
@@ -1097,7 +1098,7 @@ class Border_Control_Admin {
 							$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
 							wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
 						}
-						delete_post_meta( $post->ID, 'is_under_review' );
+
 						/*
 						 * Duplicate all post meta just in two SQL queries.
 						 */
