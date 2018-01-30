@@ -507,10 +507,10 @@ class Border_Control_Admin {
 	 */
 	public function sbc_reject_post_save( $data, $postarr ) {
 		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
-		
+
 		if ( empty( $post ) )
 			return $data;
-		
+
 		if ( $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -1025,6 +1025,7 @@ class Border_Control_Admin {
 		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
 
 			$original = get_post_meta( $post_id, 'original', true );
+			delete_post_meta( $post_id, 'is_under_review' );
 
 			if ( $original ) :
 				return false;
@@ -1071,7 +1072,7 @@ class Border_Control_Admin {
 						$args = array(
 							'comment_status' => $post->comment_status,
 							'ping_status'    => $post->ping_status,
-							'post_author'    => $new_post_author,
+							'post_author'    => $post->post_author,
 							'post_content'   => $post->post_content,
 							'post_excerpt'   => $post->post_excerpt,
 							'post_name'      => $post->post_name,
