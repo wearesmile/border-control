@@ -1075,7 +1075,7 @@ class Border_Control_Admin {
 							'post_content'   => $post->post_content,
 							'post_excerpt'   => $post->post_excerpt,
 							'post_name'      => $post->post_name,
-							'post_parent'    => $post_id,
+							'post_parent'    => $post->post_parent,
 							'post_password'  => $post->post_password,
 							'post_status'    => 'pending',
 							'post_title'     => $post->post_title,
