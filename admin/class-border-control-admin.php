@@ -726,18 +726,21 @@ class Border_Control_Admin {
 		$original_post = get_post( $original_id );
 		
 		$post_name = $original_post->post_name;
+		$editable_post_name = $draft_post->post_name;
 		
-		if ( get_post_meta( $original_id, '_new_post_name', true ) && $original_id ) :
-
-			$post_name = $draft_post->post_name;
-
-			delete_post_meta( $original_id, '_new_post_name' );
+//		if ( get_post_meta( $original_id, '_new_post_name', true ) && $original_id ) :
+//
+//			$post_name = $draft_post->post_name;
+//
+//			delete_post_meta( $original_id, '_new_post_name' );
 		
 			$draft_post_array = (array) $draft_post;
 		
-			if ( ! $this->sbc_ends_with( $post_name, '-temporary-editable-version' ) ) :
+			if ( ! $this->sbc_ends_with( $editable_post_name, '-temporary-editable-version' ) ) :
 
-				$draft_post_array['post_name'] = $post_name . '-temporary-editable-version';
+				$post_name = $editable_post_name;
+		
+				$draft_post_array['post_name'] = $editable_post_name . '-temporary-editable-version';
 
 				remove_action('save_post', 'sbc_owners_save');
 
@@ -746,7 +749,7 @@ class Border_Control_Admin {
 				add_action('save_post', 'sbc_owners_save');
 
 			endif;
-		endif;
+//		endif;
 		$original_post_args = array(
 			'ID'			 => $original_id,
 			'comment_status' => $draft_post->comment_status,
@@ -1102,7 +1105,7 @@ class Border_Control_Admin {
 							'post_author'    => $post->post_author,
 							'post_content'   => $post->post_content,
 							'post_excerpt'   => $post->post_excerpt,
-							'post_name'      => $post->post_name,
+							'post_name'      => $post->post_name . '-temporary-editable-version',
 							'post_parent'    => $post->post_parent,
 							'post_password'  => $post->post_password,
 							'post_status'    => 'pending',
