@@ -342,10 +342,14 @@ class Border_Control_Admin {
 		return $input;
 	}
 
-	public function sbc_owners_save( $post_id ) {
+	public function sbc_owners_save( $post_id, $post, $update ) {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
 		if ( ! isset( $_POST['owners_nonce'] ) || ! wp_verify_nonce( $_POST['owners_nonce'], '_owners_nonce' ) ) return;
 		if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+		
+		if ( $_POST['post_name'] !== $post->post_name ) :
+			$update_meta = update_post_meta( $post_id, '_new_post_name', 'true' );
+		endif;
 
 		$meta_key = 'owners_owner';
 
@@ -697,12 +701,11 @@ class Border_Control_Admin {
 		if ( wp_is_post_revision( $post_id ) ) :
 			return;
 		endif;
-
-		if ( 'publish' !== get_post_status( $post_id ) ) :
+		if ( ! get_post_meta( $post_id, 'original', true ) ) :
 			return;
 		endif;
 
-		if ( ! get_post_meta( $post_id, 'original', true ) ) :
+		if ( 'publish' !== get_post_status( $post_id ) ) :
 			return;
 		endif;
 
@@ -721,12 +724,34 @@ class Border_Control_Admin {
 		$original_id = get_post_meta( $post_id, 'original', true );
 		$new_post_id = $original_id;
 		$original_post = get_post( $original_id );
+		
+		$post_name = $original_post->post_name;
+		
+		if ( get_post_meta( $original_id, '_new_post_name', true ) && $original_id ) :
 
+			$post_name = $draft_post->post_name;
+
+			delete_post_meta( $original_id, '_new_post_name' );
+		
+			$draft_post_array = (array) $draft_post;
+		
+			if ( ! $this->sbc_ends_with( $post_name, '-temporary-editable-version' ) ) :
+
+				$draft_post_array['post_name'] = $post_name . '-temporary-editable-version';
+
+				remove_action('save_post', 'sbc_owners_save');
+
+				wp_update_post( $draft_post_array );
+
+				add_action('save_post', 'sbc_owners_save');
+
+			endif;
+		endif;
 		$original_post_args = array(
 			'ID'			 => $original_id,
 			'comment_status' => $draft_post->comment_status,
 			'ping_status'    => $draft_post->ping_status,
-			'post_name'		 => $draft_post->post_name,
+			'post_name'		 => $post_name,
 			'post_author'    => $draft_post->post_author,
 			'post_content'   => $draft_post->post_content,
 			'post_excerpt'   => $draft_post->post_excerpt,
@@ -736,6 +761,8 @@ class Border_Control_Admin {
 			'to_ping'        => $draft_post->to_ping,
 			'menu_order'     => $draft_post->menu_order,
 		);
+		
+		// Need to make sure that the original post and the editable post do not clash names
 
 		wp_update_post( $original_post_args );
 
@@ -1164,6 +1191,13 @@ class Border_Control_Admin {
 		if ( in_array( $post_type, $post_types, true ) ) :
 			$wp_post_statuses['pending']->show_in_admin_all_list = false;
 		endif;
+	}
+	
+	public function sbc_ends_with( $haystack, $needle ) {
+		$length = strlen($needle);
+
+		return $length === 0 || 
+		(substr($haystack, -$length) === $needle);
 	}
 
 }
