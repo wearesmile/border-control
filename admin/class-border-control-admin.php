@@ -346,7 +346,7 @@ class Border_Control_Admin {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
 		if ( ! isset( $_POST['owners_nonce'] ) || ! wp_verify_nonce( $_POST['owners_nonce'], '_owners_nonce' ) ) return;
 		if ( ! current_user_can( 'edit_post', $post_id ) ) return;
-		
+
 		if ( $_POST['post_name'] !== $post->post_name ) :
 			$update_meta = update_post_meta( $post_id, '_new_post_name', 'true' );
 		endif;
@@ -724,22 +724,22 @@ class Border_Control_Admin {
 		$original_id = get_post_meta( $post_id, 'original', true );
 		$new_post_id = $original_id;
 		$original_post = get_post( $original_id );
-		
+
 		$post_name = $original_post->post_name;
 		$editable_post_name = $draft_post->post_name;
-		
+
 //		if ( get_post_meta( $original_id, '_new_post_name', true ) && $original_id ) :
 //
 //			$post_name = $draft_post->post_name;
 //
 //			delete_post_meta( $original_id, '_new_post_name' );
-		
+
 			$draft_post_array = (array) $draft_post;
-		
+
 			if ( ! $this->sbc_ends_with( $editable_post_name, '-temporary-editable-version' ) ) :
 
 				$post_name = $editable_post_name;
-		
+
 				$draft_post_array['post_name'] = $editable_post_name . '-temporary-editable-version';
 
 				remove_action('save_post', 'sbc_owners_save');
@@ -764,7 +764,7 @@ class Border_Control_Admin {
 			'to_ping'        => $draft_post->to_ping,
 			'menu_order'     => $draft_post->menu_order,
 		);
-		
+
 		// Need to make sure that the original post and the editable post do not clash names
 
 		wp_update_post( $original_post_args );
@@ -777,12 +777,27 @@ class Border_Control_Admin {
 		}
 
 		// Duplicate all post meta just in two SQL queries.
-		$custom_fields = get_post_custom( $post_id );
-		foreach ( $custom_fields as $meta_key => $meta_value ) {
-			if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
-				continue;
-			endif;
-			update_post_meta( $new_post_id, $meta_key, $meta_value[0] );
+		$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM $wpdb->postmeta
+				 WHERE post_id = %d
+				",
+				$new_post_id
+			)
+		);
+		if ( 0 !== count( $post_meta_infos ) ) {
+			$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+			foreach ( $post_meta_infos as $meta_info ) {
+				$meta_key = $meta_info->meta_key;
+				if ( '_wp_old_slug' === $meta_key ) :
+					continue;
+				endif;
+				$meta_value = addslashes( $meta_info->meta_value );
+				$sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
+			}
+			$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
+			$wpdb->query( $sql_query );
 		}
 
 		// Re-hook this function.
@@ -1195,11 +1210,11 @@ class Border_Control_Admin {
 			$wp_post_statuses['pending']->show_in_admin_all_list = false;
 		endif;
 	}
-	
+
 	public function sbc_ends_with( $haystack, $needle ) {
 		$length = strlen($needle);
 
-		return $length === 0 || 
+		return $length === 0 ||
 		(substr($haystack, -$length) === $needle);
 	}
 
