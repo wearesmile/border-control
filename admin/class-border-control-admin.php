@@ -790,7 +790,7 @@ class Border_Control_Admin {
 			$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
 			foreach ( $post_meta_infos as $meta_info ) {
 				$meta_key = $meta_info->meta_key;
-				if ( '_wp_old_slug' === $meta_key ) :
+				if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
 					continue;
 				endif;
 				$meta_value = addslashes( $meta_info->meta_value );
@@ -1071,6 +1071,11 @@ class Border_Control_Admin {
 
 			$original = get_post_meta( $post_id, 'original', true );
 			delete_post_meta( $post_id, 'is_under_review' );
+
+			if ( (int)$original === (int)$post_id ) :
+				delete_post_meta( $post_id, 'original' );
+				$original = false;
+			endif;
 
 			if ( $original ) :
 				return false;
