@@ -1072,9 +1072,10 @@ class Border_Control_Admin {
 			$original = get_post_meta( $post_id, 'original', true );
 			delete_post_meta( $post_id, 'is_under_review' );
 
-			if ( (int)$original === (int)$post_id ) :
+			if ( $original && (int)$original === (int)$post_id ) :
 				delete_post_meta( $post_id, 'original' );
-				$original = false;
+				wp_redirect( get_edit_post_link( $post_id ) );
+				die;
 			endif;
 
 			if ( $original ) :
