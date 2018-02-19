@@ -171,6 +171,9 @@ class Border_Control {
 		$this->loader->add_action( 'wp_dashboard_setup', $plugin_admin, 'sbc_awaiting_review_approval_widgets' );
 		$this->loader->add_action( 'wp_insert_post', $plugin_admin, 'sbc_after_governance_update', 99, 3 );
 
+		//filter the post data
+		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
+
 	}
 
 	/**

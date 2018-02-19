@@ -436,6 +436,14 @@ class Border_Control_Admin {
 			'show_in_admin_status_list' => true,
 			'label_count'               => _n_noop( 'Require Improvement <span class="count">(%s)</span>', 'Require Improvement <span class="count">(%s)</span>' ),
 		) );
+		register_post_status( 'awaiting_publish', array(
+			'label'                     => _x( 'Awaiting Initial Publish', 'post' ),
+			'public'                    => false,
+			'exclude_from_search'       => true,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Awaiting Initial Publish <span class="count">(%s)</span>', 'Awaiting Initial Publish <span class="count">(%s)</span>' ),
+		) );
 	}
 
 	/**
@@ -709,6 +717,8 @@ class Border_Control_Admin {
 			return;
 		endif;
 
+		$draft_post = get_post( $post_id );
+
 		// Unhook this function so it doesn't loop infinitely.
 		remove_action('wp_insert_post', 'sbc_after_governance_update');
 
@@ -716,10 +726,15 @@ class Border_Control_Admin {
 			array(
 				'ID' => $post_id,
 				'post_status' => 'pending',
+				'insert_temp_name' => true,
+				'temp_post_name'   => $draft_post->post_name,
 			)
 		);
 
-		$draft_post = get_post( $post_id );
+		if ( false === $this->sbc_can_user_moderate() ) :
+			return;
+		endif;
+
 
 		$original_id = get_post_meta( $post_id, 'original', true );
 		$new_post_id = $original_id;
@@ -728,28 +743,22 @@ class Border_Control_Admin {
 		$post_name = $original_post->post_name;
 		$editable_post_name = $draft_post->post_name;
 
-//		if ( get_post_meta( $original_id, '_new_post_name', true ) && $original_id ) :
-//
-//			$post_name = $draft_post->post_name;
-//
-//			delete_post_meta( $original_id, '_new_post_name' );
+		$draft_post_array = (array) $draft_post;
 
-			$draft_post_array = (array) $draft_post;
+		if ( ! $this->sbc_ends_with( $editable_post_name, '-temporary-editable-version' ) ) :
 
-			if ( ! $this->sbc_ends_with( $editable_post_name, '-temporary-editable-version' ) ) :
+			$post_name = $editable_post_name;
 
-				$post_name = $editable_post_name;
+			$draft_post_array['post_name'] = $editable_post_name . '-temporary-editable-version';
 
-				$draft_post_array['post_name'] = $editable_post_name . '-temporary-editable-version';
+			remove_action('save_post', 'sbc_owners_save');
 
-				remove_action('save_post', 'sbc_owners_save');
+			wp_update_post( $draft_post_array );
 
-				wp_update_post( $draft_post_array );
+			add_action('save_post', 'sbc_owners_save');
 
-				add_action('save_post', 'sbc_owners_save');
+		endif;
 
-			endif;
-//		endif;
 		$original_post_args = array(
 			'ID'			 => $original_id,
 			'comment_status' => $draft_post->comment_status,
@@ -763,6 +772,7 @@ class Border_Control_Admin {
 			'post_type'      => $draft_post->post_type,
 			'to_ping'        => $draft_post->to_ping,
 			'menu_order'     => $draft_post->menu_order,
+			'post_status'	 => 'publish',
 		);
 
 		// Need to make sure that the original post and the editable post do not clash names
@@ -1109,6 +1119,13 @@ class Border_Control_Admin {
 						return false;
 					endif;
 
+					// Set the original post status to custom post status to await approval
+					$args = array(
+						'ID'			=> (string) $post_id,
+						'post_status'   => 'awaiting_publish',
+					);
+					wp_update_post( $args );
+
 					$current_user = wp_get_current_user();
 					$new_post_author = $current_user->ID;
 
@@ -1121,19 +1138,21 @@ class Border_Control_Admin {
 						 * New post data array.
 						 */
 						$args = array(
-							'comment_status' => $post->comment_status,
-							'ping_status'    => $post->ping_status,
-							'post_author'    => $post->post_author,
-							'post_content'   => $post->post_content,
-							'post_excerpt'   => $post->post_excerpt,
-							'post_name'      => $post->post_name . '-temporary-editable-version',
-							'post_parent'    => $post->post_parent,
-							'post_password'  => $post->post_password,
-							'post_status'    => 'pending',
-							'post_title'     => $post->post_title,
-							'post_type'      => $post->post_type,
-							'to_ping'        => $post->to_ping,
-							'menu_order'     => $post->menu_order,
+							'comment_status'   => $post->comment_status,
+							'ping_status'      => $post->ping_status,
+							'post_author'      => $post->post_author,
+							'post_content'     => $post->post_content,
+							'post_excerpt'     => $post->post_excerpt,
+							'post_name'        => $post->post_name . '-temporary-editable-version',
+							'post_parent'      => $post->post_parent,
+							'post_password'    => $post->post_password,
+							'post_status'      => 'pending',
+							'post_title'       => $post->post_title,
+							'post_type'        => $post->post_type,
+							'to_ping'          => $post->to_ping,
+							'menu_order'       => $post->menu_order,
+							'insert_temp_name' => true,
+							'temp_post_name'   => $post->post_name,
 						);
 
 						/*
@@ -1194,6 +1213,14 @@ class Border_Control_Admin {
 				endif;
 			endif;
 		endif;
+	}
+
+	public function sbc_filter_post_data( $data, $postarr ) {
+
+		if ( isset( $postarr['insert_temp_name'] ) && true === $postarr['insert_temp_name'] && isset(  $postarr['temp_post_name'] ) && ! empty( $postarr['temp_post_name'] ) ) {
+			$data['post_name'] = $postarr['temp_post_name'] . '-temporary-editable-version';
+		}
+		return $data;
 	}
 
 	/**
