@@ -156,20 +156,26 @@ class Border_Control {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' );
-		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_owners_add_meta_box' );
-		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save' );
-		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' );
-		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
-		$this->loader->add_filter( 'gettext', $plugin_admin, 'sbc_change_publish_button', 10, 2 );
-		$this->loader->add_action( 'wp_insert_post_data', $plugin_admin, 'sbc_reject_post_save', '99', 2 );
-		$this->loader->add_action( 'post_submitbox_misc_actions', $plugin_admin, 'sbc_display_post_status', 10, 1 );
-		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_rejected_post_status' );
-		$this->loader->add_action( 'load-post.php', $plugin_admin, 'sbc_create_draft' );
-		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_hide_pending', 1 );
-		$this->loader->add_action( 'admin_notices', $plugin_admin, 'sbc_governence_noticies' );
-		$this->loader->add_action( 'wp_dashboard_setup', $plugin_admin, 'sbc_awaiting_review_approval_widgets' );
-		$this->loader->add_action( 'wp_insert_post', $plugin_admin, 'sbc_after_governance_update', 99, 3 );
+//		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' );
+//		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_owners_add_meta_box' );
+//		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save' );
+//		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' );
+//		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
+//		$this->loader->add_filter( 'gettext', $plugin_admin, 'sbc_change_publish_button', 10, 2 );
+//		$this->loader->add_action( 'wp_insert_post_data', $plugin_admin, 'sbc_reject_post_save', '99', 2 );
+//		$this->loader->add_action( 'post_submitbox_misc_actions', $plugin_admin, 'sbc_display_post_status', 10, 1 );
+//		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_rejected_post_status' );
+//		$this->loader->add_action( 'load-post.php', $plugin_admin, 'sbc_create_draft' );
+//		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_hide_pending', 1 );
+//		$this->loader->add_action( 'admin_notices', $plugin_admin, 'sbc_governence_noticies' );
+//		$this->loader->add_action( 'wp_dashboard_setup', $plugin_admin, 'sbc_awaiting_review_approval_widgets' );
+//		$this->loader->add_action( 'wp_insert_post', $plugin_admin, 'sbc_after_governance_update', 99, 3 );
+//		
+//		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'sbc_override_edited_post', 99 );
+//
+//		//filter the post data
+//		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
+		$this->loader->add_filter( 'wp_insert_post', $plugin_admin, 'sbc_detect_published_revisions', 99, 3 );
 
 	}
 
@@ -186,6 +192,8 @@ class Border_Control {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_allow_pending_posts' );
+		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post' );
 
 	}
 

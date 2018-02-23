@@ -1025,12 +1025,20 @@ class Border_Control_Admin {
 		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
 
 			$original = get_post_meta( $post_id, 'original', true );
+			// $original is both a check for the editable version of a post and a truthy for if this post is the original. Naming could do with clarification.
+			delete_post_meta( $post_id, 'is_under_review' );
+
+			if ( $original && (int)$original === (int)$post_id ) :
+				delete_post_meta( $post_id, 'original' );
+				wp_redirect( get_edit_post_link( $post_id ) );
+				die;
+			endif;
 
 			if ( $original ) :
 				return false;
 			else :
 				$args = array(
-					'post_type' => $post_types,
+					'post_type' => get_post_type( $post_id ),
 					'post_status' => 'pending',
 					'meta_query' => array(
 						array(
@@ -1043,9 +1051,7 @@ class Border_Control_Admin {
 				$query = new WP_Query( $args );
 				if ( $query->have_posts() ) :
 					while ( $query->have_posts() ) : $query->the_post();
-						wp_redirect( admin_url( 'post.php?action=edit&post=' . get_the_ID() ) );
-						exit;
-						return false;
+						$_GET['edit_post'] = get_the_ID();
 					endwhile;
 					/* Restore original Post Data */
 					wp_reset_postdata();
@@ -1055,6 +1061,18 @@ class Border_Control_Admin {
 
 					if ( 'draft' === $post->post_status || 'pending' === $post->post_status ) :
 						return false;
+					endif;
+		
+					if ( 'publish' !== $post->post_status ) :
+
+						// Set the original post status to custom post status to await approval
+						$args = array(
+							'ID'			=> (string) $post_id,
+//							'post_status'   => 'pending',
+							'post_status'   => 'awaiting_publish',
+						);
+						wp_update_post( $args );
+		
 					endif;
 
 					$current_user = wp_get_current_user();
@@ -1134,7 +1152,7 @@ class Border_Control_Admin {
 						/*
 						 * finally, redirect to the edit post screen for the new draft
 						 */
-						wp_redirect( admin_url( "post.php?action=edit&post=$new_post_id" ) );
+						wp_redirect( get_edit_post_link( $post_id ) );
 						exit;
 					} else {
 						wp_die( "Post creation failed, could not find original post: $post_id" );
@@ -1165,4 +1183,84 @@ class Border_Control_Admin {
 		endif;
 	}
 
+	public function sbc_ends_with( $haystack, $needle ) {
+		$length = strlen($needle);
+
+		return $length === 0 ||
+		(substr($haystack, -$length) === $needle);
+	}
+	
+	public function sbc_override_edited_post( $query ) {
+//		$screen = get_current_screen();
+//		echo '<pre>'; var_dump($query); echo '</pre>';
+//		if ( $this->sbc_is_controlled_cpt() && is_admin() && $screen->base == 'post' && $query->is_main_query() ) :
+//		die;
+//			if ( get_post_meta( $post_id, 'original', true ) ) :
+//			endif;
+//		endif;
+	}
+	
+	public function sbc_detect_published_revisions( $post_id, $post, $update ) {
+		if ( 'revision' === $post->post_type ) :
+			$post_parent = get_post( $post->post_parent );
+			$frontpage_id = (int) get_option( 'page_on_front' );
+			$frontpage = get_post( $frontpage_id );
+		
+			$options = get_option( 'sbc_settings' );
+			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		
+			if ( in_array( $post_parent->post_type, $post_types ) ) :
+				if ( $frontpage_id === $post->post_parent || $frontpage->post_parent === $post->post_parent ) :
+					// If the non revision post is the homepage, or if the homepage post parent is the same as this post parent
+					if ( 'publish' === $post_parent->post_status ) :
+						// if page on front is not post parent
+						// find page on front, return to revision with post status of inherit
+						if ( $frontpage_id !== $post->post_parent ) :
+							$frontpage->post_type = "revision";
+							$frontpage->post_status = "inherit";
+							wp_update_post( $frontpage );
+						endif;
+						$post->post_status = 'publish';
+						wp_update_post( $post );
+		
+						update_option( 'page_on_front', $post->post_parent );
+					else :
+						// GET THE LATEST PUBLISHED REVISION AND MAKE IT THE SAME POST TYPE
+						
+						$revision_args = array(
+												'post_parent' => $post->post_parent,
+												'post_type' => 'revision',
+												'post_status' => 'publish',
+												'numberposts' => 1,
+												'order' => 'DESC',
+												'orderby' => 'modified'
+											);
+						$revisions = get_children( $revision_args );
+						$revision;
+						foreach ( $revisions as $post_revision ) :
+							if ( $post_revision->post_modified !== $post_object->post_modified ) :
+								$revision = $post_revision;
+							endif;
+						endforeach;
+
+						if ( $revision ) :
+							$revision->post_type = $post_parent->post_type;
+							wp_update_post( $revision );
+						endif;
+
+						wp_update_post( $post );
+						update_option( 'page_on_front', $post_id );
+					endif;
+					return;
+				endif;
+				if ( 'publish' === $post_parent->post_status ) :
+					$post->post_status = 'publish';
+					wp_update_post( $post );
+					return;
+				endif;
+			endif;
+			
+		endif;
+		
+	}
 }
