@@ -1251,4 +1251,10 @@ class Border_Control_Admin {
 		(substr($haystack, -$length) === $needle);
 	}
 
+
+	public function remove_quick_edit( $actions ) {
+		unset($actions['inline hide-if-no-js']);
+		return $actions;
+	}
+
 }

@@ -174,6 +174,11 @@ class Border_Control {
 		//filter the post data
 		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
 
+
+		if ( ! is_super_admin() ) {
+			$this->loader->add_filter( 'page_row_actions', $plugin_admin, 'remove_quick_edit', 10, 1 );
+			$this->loader->add_filter( 'post_row_actions', $plugin_admin, 'remove_quick_edit', 10, 1 );
+		}
 	}
 
 	/**
