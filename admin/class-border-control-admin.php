@@ -126,21 +126,21 @@ class Border_Control_Admin {
 			'borderControlPage'
 		);
 
-		add_settings_field(
-			'sbc_users',
-			__( 'Users who can approve moderation', 'smile' ),
-			array( $this, 'sbc_users_render' ),
-			'borderControlPage',
-			'sbc_borderControlPage_section'
-		);
-
-		add_settings_field(
-			'sbc_role',
-			__( 'User roles which can moderate', 'smile' ),
-			array( $this, 'sbc_roles_render' ),
-			'borderControlPage',
-			'sbc_borderControlPage_section'
-		);
+//		add_settings_field(
+//			'sbc_users',
+//			__( 'Users who can approve moderation', 'smile' ),
+//			array( $this, 'sbc_users_render' ),
+//			'borderControlPage',
+//			'sbc_borderControlPage_section'
+//		);
+//
+//		add_settings_field(
+//			'sbc_role',
+//			__( 'User roles which can moderate', 'smile' ),
+//			array( $this, 'sbc_roles_render' ),
+//			'borderControlPage',
+//			'sbc_borderControlPage_section'
+//		);
 
 		add_settings_field(
 			'sbc_post_type',
@@ -1200,6 +1200,20 @@ class Border_Control_Admin {
 //		endif;
 	}
 	
+	public function sbc_register_pending() {
+		register_post_status( 'sbc_pending', array( // public_pending ???
+			'label'                     => _x( 'Pending', 'sbc' ),
+			'public'                    => true,
+			'internal'                  => false,
+			'private'                   => false,
+			'protected'                 => false,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Pending <span class="count">(%s)</span>', 'Pending <span class="count">(%s)</span>' ),
+		) );
+	}
+	
 	public function sbc_detect_published_revisions( $post_id, $post, $update ) {
 		if ( 'revision' === $post->post_type ) :
 			$post_parent = get_post( $post->post_parent );
@@ -1237,19 +1251,21 @@ class Border_Control_Admin {
 											);
 						$revisions = get_children( $revision_args );
 						$revision;
-						foreach ( $revisions as $post_revision ) :
-							if ( $post_revision->post_modified !== $post_object->post_modified ) :
-								$revision = $post_revision;
+						if ( ! empty( $revisions ) ) :
+							foreach ( $revisions as $post_revision ) :
+								if ( $post_revision->post_modified !== $post_object->post_modified ) :
+									$revision = $post_revision;
+								endif;
+							endforeach;
+
+							if ( $revision ) :
+								$revision->post_type = $post_parent->post_type;
+								wp_update_post( $revision );
 							endif;
-						endforeach;
 
-						if ( $revision ) :
-							$revision->post_type = $post_parent->post_type;
-							wp_update_post( $revision );
+							wp_update_post( $post );
+							update_option( 'page_on_front', $post_id );
 						endif;
-
-						wp_update_post( $post );
-						update_option( 'page_on_front', $post_id );
 					endif;
 					return;
 				endif;
@@ -1262,5 +1278,47 @@ class Border_Control_Admin {
 			
 		endif;
 		
+	}
+	public function sbc_manage_caps() {
+		$editor = get_role( 'editor' );
+
+		// A list of capabilities to remove from editors.
+		$caps = array(
+			'publish_posts',
+			'publish_pages',
+		);
+
+		foreach ( $caps as $cap ) {
+
+			// Remove the capability.
+			$editor->remove_cap( $cap );
+		}
+	}
+	public function sbc_publish_check( $data, $postarr ) {
+		// Get correct permissions
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
+		if ( empty( $postarr['post_ID'] ) ) return;
+		if ( ! current_user_can( 'edit_post', $postarr['post_ID'] ) ) return;
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( $data['post_type'], $post_types ) ) :
+			if ( 'pending' === $data['post_status'] ) :
+				$data['post_status'] = 'sbc_pending';
+			elseif ( ! current_user_can( 'publish_post', $postarr['post_ID'] ) ) :
+				if ( 'publish' === $data['post_status'] ) :
+					$data['post_status'] = 'sbc_pending';
+				endif;
+			endif;
+		endif;
+		return $data;
+	}
+	
+	public function sbc_force_revisions() {
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		foreach ( $post_types as $post_type ) :
+			add_post_type_support( $post_type, 'revisions' );
+		endforeach;
 	}
 }

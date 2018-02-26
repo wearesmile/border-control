@@ -100,22 +100,30 @@ class Border_Control_Public {
 
 	}
 	
-	public function sbc_allow_pending_posts( $query ) {
+	/*public function sbc_allow_pending_posts( $query ) {
 		if ( is_admin() ) :
 			return $query;
 		endif;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-		$post = $query->queried_object;
-//		var_dump($query);
+		
+		$uri = trim( $_SERVER['REQUEST_URI'], '/' );
+		$segments = explode('/', $uri);
+		$slug_index = count( $segments );
+
+		$page_slug = $segments[$slug_index - 1];
+
+		$post = get_page_by_path( $page_slug, OBJECT, $post_types );
+//		echo "<pre>"; var_dump($query);
 //		die;
+
 		if ( is_main_query() && in_array( $post->post_type, $post_types ) ) :
 			if ( 'publish' !== $post->post_status ) :
 				$query->set( 'post_status', array( 'publish', 'pending' ) );
 			endif;
 		endif;
 		return $query;
-	}
+	}*/
 	
 	public function sbc_set_the_post( $post_object ) {
 		global $wp_query;
@@ -156,44 +164,165 @@ class Border_Control_Public {
 	}
 	
 	public function sbc_override_404( $query ) {
-		global $wp_query;
-		global $post;
-//		var_dump(is_front_page() );
-		if ( is_404() || is_front_page() ) :
-			if ( is_404() ) :
-				if ( is_front_page() ) : 
-					$frontpage_id = get_option( 'page_on_front' );
-					$post_object = get_post( $frontpage_id );
-				else :
-					$uri = trim($_SERVER['REQUEST_URI'], '/');
-					$segments = explode('/', $uri);
-					$slug_index = count( $segments );
+		if ( is_admin() ) return $query;
+	global $wp_rewrite;
+		echo "<pre>";var_dump($wp_rewrite);
+		die;
 
-					$page_slug = $segments[$slug_index - 1];
 
-					$options = get_option( 'sbc_settings' );
-					$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( is_404() ) :
 
-					$post_object = get_page_by_path( $page_slug, OBJECT, $post_types );
-				endif;
-			endif;
-			$revision_args = array('post_parent' => $post_object->ID, 'post_type' => 'revision', 'post_status' => 'inherit', 'numberposts' => 1);
-			$revision = array_shift( get_children( $revision_args ) );
-
-			if ( $revision ):
-				$revision->post_status = 'publish';
-				$revision->post_type = $post_object->post_type;
-				$GLOBALS['post'] = $revision;
-				$post_object = $revision;
-				$post = $revision;
-				setup_postdata( $GLOBALS['post'] =& $revision );
-				$wp_query = new WP_Query(array(
-					post__in => array( $revision->ID )
-				));
-			endif;
+//			$uri = trim($_SERVER['REQUEST_URI'], '/');
+//			$segments = explode('/', $uri);
+//			$slug_index = count($segments);
+//		
+//			$options = get_option( 'sbc_settings' );
+//			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+//
+//			$page_slug = $segments[$slug_index - 1];
+//			$post = get_page_by_path( $page_slug, OBJECT, $post_types );
+//
+//			$revision_args = array(
+//				'post_parent' => $post->ID,
+//				'post_type' => 'revision',
+//				'post_status' => 'inherit',
+//				'numberposts' => 1
+//			);
+//			$revision = array_shift( get_children( $revision_args ) );
+//
+//			if ( $revision ) :
+//				$args = array(
+//					'p'         => $revision->ID,
+//					'post_type' => 'any'
+//				);
+//				query_posts( $args );
+//				$query = $GLOBALS['wp_query'];
+//		echo "<pre>";
+//		var_dump($revision);
+//		die;
+//				$query->query_vars['pagename'] = $revision->page_name;          
+//				$query->query_string = "pagename={$revision->page_name}";
+//				$query->request = $revision->page_name;
+//				$query->matched_rule = "({$revision->page_name})(/[0-9]+)?/?$";
+//				$query->matched_query = "pagename={$revision->page_name}&page=";
+//				$query->did_permalink = 1;
+//				$query->query_vars['post_status'] = array( 'publish', 'pending' );
+//		
+//				$revision->post_status = 'publish';
+//				$revision->post_type = $post->post_type;
+//				$GLOBALS['post'] = $revision;
+//				$post = $revision;
+//				setup_postdata( $GLOBALS['post'] =& $revision );
+//				$wp_query = new WP_Query(array(
+//					'p' => $revision->ID,
+//				));
+//			endif;
 
 		endif;
-		return $query;
-	}
 
+		return $query;
+//		global $wp_query;
+//		global $post;
+//		var_dump($wp_query );
+//		var_dump(is_404());
+//		die;
+//		if ( is_404() ) :
+//			$uri = trim($_SERVER['REQUEST_URI'], '/');
+//			$segments = explode('/', $uri);
+//			$slug_index = count( $segments );
+//
+//			$page_slug = $segments[$slug_index - 1];
+//
+//			$options = get_option( 'sbc_settings' );
+//			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+//
+//			$post_object = get_page_by_path( $page_slug, OBJECT, $post_types );
+//
+//			$revision_args = array('post_parent' => $post_object->ID, 'post_type' => 'revision', 'post_status' => 'inherit', 'numberposts' => 1);
+//			$revision = array_shift( get_children( $revision_args ) );
+//			if ( $revision ):
+////				$revision->post_status = 'publish';
+////				$revision->post_type = $post_object->post_type;
+//				$GLOBALS['post'] = $revision;
+//				$post_object = $revision;
+//				$post = $revision;
+//				setup_postdata( $GLOBALS['post'] =& $revision );
+//				$wp_query = new WP_Query(array(
+//					post__in => array( $revision->ID )
+//				));
+//			endif;
+//
+//		endif;
+//		return $query;
+	}
+	
+	public function sbc_allow_pending_posts( $query ) {
+		global $wp_query;
+		if ( ! is_admin() ) : //&& $wp_query->is_main_query ) :
+//		var_dump(empty( $query->query_vars['post_status'] ) && is_main_query() );
+//			echo "<pre>"; var_dump($query);
+//		var_dump(empty( $query->query_vars['post_status'] ));
+//			if ( empty( $query->query_vars['post_status'] ) ) ://&& $wp_query->is_main_query ) :
+//				$query->query_vars['post_status'] = array( 'publish', 'sbc_pending' );
+//			endif;
+//		echo "<pre>"; var_dump($wp_query);
+//		var_dump($query);
+//		die;
+		endif;
+//		remove_action( 'pre_get_posts', 'sbc_allow_pending_posts' );
+//		return $query;
+	}
+	public function sbc_revision_the_post() {
+		global $wp_query;
+		if ( is_main_query() && ! is_admin() && ! empty( $wp_query->posts ) ) :
+			$post = $wp_query->posts[0];
+			$options = get_option( 'sbc_settings' );
+			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+//		echo '<hr>';
+//		var_dump($wp_query);
+//		var_dump(in_array( $post->post_type, $post_types ));
+//		var_dump('publish' !== $post->post_status && in_array( $post->post_type, $post_types ));
+			if ( 'publish' !== $post->post_status && in_array( $post->post_type, $post_types ) ) :
+//		echo "<pre>";
+		
+		
+		
+//		
+//	var_dump($post->ID);	
+//	var_dump(wp_get_post_revisions( $post->ID ));	
+//		
+//		die;
+
+				$revision_args = array(
+										'post_parent' => $post->ID,
+										'post_type' => 'revision',
+										'post_status' => array( 'publish', 'inherit' ),
+										'numberposts' => 1,
+										'order' => 'DESC',
+										'orderby' => 'modified'
+									);
+				$revisions = get_children( $revision_args );
+//		var_dump($revision_args);
+//	var_dump($revisions);
+				$revision = null;
+				foreach ( $revisions as $post_revision ) :
+					if ( $post_revision->post_modified !== $post->post_modified ) :
+						$revision = $post_revision;
+					endif;
+				endforeach;
+//	var_dump($revision);
+//				if ( $revision ) :
+//					$revision->post_status = 'publish';
+//					$revision->post_type = $post_object->post_type;
+//					$GLOBALS['post'] = $revision;
+//					$post_object = $revision;
+//					$post = $revision;
+//					setup_postdata( $GLOBALS['post'] =& $revision );
+//					$wp_query = new WP_Query(array(
+//						post__in => array( $revision->ID )
+//					));
+//				endif;
+			endif;
+		endif;
+	}
 }
