@@ -1212,6 +1212,17 @@ class Border_Control_Admin {
 			'show_in_admin_status_list' => true,
 			'label_count'               => _n_noop( 'Pending <span class="count">(%s)</span>', 'Pending <span class="count">(%s)</span>' ),
 		) );
+		register_post_status( 'sbc_publish', array( // public_pending ???
+			'label'                     => _x( 'Pending Publish', 'sbc' ),
+			'public'                    => false,
+			'internal'                  => false,
+			'private'                   => false,
+			'protected'                 => true,
+			'exclude_from_search'       => true,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Pending Initial Publish <span class="count">(%s)</span>', 'Pending Initial Publish <span class="count">(%s)</span>' ),
+		) );
 	}
 	
 	public function sbc_detect_published_revisions( $post_id, $post, $update ) {
@@ -1296,15 +1307,18 @@ class Border_Control_Admin {
 		// Get correct permissions
 //		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
-//		if ( empty( $postarr['post_ID'] ) ) return;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $data['post_type'], $post_types ) ) :
-			if ( 'pending' === $data['post_status'] ) :
-				$data['post_status'] = 'sbc_pending';
-			elseif ( ! current_user_can( 'publish_post', $postarr['post_ID'] ) ) :
-				if ( 'publish' === $data['post_status'] ) :
+			if ( empty( $postarr['post_ID'] ) ) :
+				$data['post_status'] = 'sbc_publish';
+			else :
+				if ( 'pending' === $data['post_status'] ) :
 					$data['post_status'] = 'sbc_pending';
+				elseif ( ! current_user_can( 'publish_post', $postarr['post_ID'] ) ) :
+					if ( 'publish' === $data['post_status'] ) :
+						$data['post_status'] = 'sbc_pending';
+					endif;
 				endif;
 			endif;
 		endif;

@@ -199,11 +199,6 @@ class Border_Control {
 //		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 //		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		
-//		$this->loader->add_action( 'wp', $plugin_public, 'sbc_override_404' );
-//		$this->loader->add_action( 'pre_handle_404', $plugin_public, 'sbc_override_sbc_404' );
-//		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_allow_pending_posts' );
-//		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_override_main_loop' );
-//		$this->loader->add_action( 'wp', $plugin_public, 'sbc_revision_the_post' );
 		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post', 99, 1 );
 
 	}
