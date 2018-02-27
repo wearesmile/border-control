@@ -127,38 +127,31 @@ class Border_Control_Public {
 	
 	public function sbc_set_the_post( $post_object ) {
 		global $wp_query;
-		global $post;
-		if ( $GLOBALS['post'] === $post_object && is_main_query() ) :
+		if ( ! is_admin() ) :
+			$post = $wp_query->posts[0];
+//		var_dump($post);
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-			if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types ) ) :
 
-				$revision_args = array(
-										'post_parent' => $post->ID,
-										'post_type' => 'revision',
-										'post_status' => 'publish',
-										'numberposts' => 1,
-										'order' => 'DESC',
-										'orderby' => 'modified'
-									);
-				$revisions = get_children( $revision_args );
-				$revision;
-				foreach ( $revisions as $post_revision ) :
-					if ( $post_revision->post_modified !== $post_object->post_modified ) :
-						$revision = $post_revision;
-					endif;
-				endforeach;
-				if ( $revision ) :
-					$revision->post_status = 'publish';
-					$revision->post_type = $post_object->post_type;
-					$GLOBALS['post'] = $revision;
-					$post_object = $revision;
-					$post = $revision;
-					setup_postdata( $GLOBALS['post'] =& $revision );
-					$wp_query = new WP_Query(array(
-						post__in => array( $revision->ID )
-					));
-				endif;
+//		echo '<hr>';
+//		var_dump($wp_query);
+//		var_dump(in_array( $post->post_type, $post_types ));
+//		var_dump('publish' !== $post->post_status && in_array( $post->post_type, $post_types ));
+			if ( 'publish' !== $post->post_status && in_array( $post->post_type, $post_types ) ) :
+//		echo "<pre>";
+		
+		
+		
+//		
+//	var_dump($post->ID);	
+//	var_dump(wp_get_post_revisions( $post->ID ));	
+//		
+//		die;
+				$last_public = get_post_meta( $post->ID, '_latest_revision', true );
+//		var_dump($wp_query);
+//				query_posts( 'p=' . $last_public );
+//		echo '<hr>';
+//		var_dump($wp_query->the_post);
 			endif;
 		endif;
 	}
@@ -278,6 +271,7 @@ class Border_Control_Public {
 			$post = $wp_query->posts[0];
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+
 //		echo '<hr>';
 //		var_dump($wp_query);
 //		var_dump(in_array( $post->post_type, $post_types ));
@@ -292,24 +286,25 @@ class Border_Control_Public {
 //	var_dump(wp_get_post_revisions( $post->ID ));	
 //		
 //		die;
-
-				$revision_args = array(
-										'post_parent' => $post->ID,
-										'post_type' => 'revision',
-										'post_status' => array( 'publish', 'inherit' ),
-										'numberposts' => 1,
-										'order' => 'DESC',
-										'orderby' => 'modified'
-									);
-				$revisions = get_children( $revision_args );
+				$last_public = get_post_meta( $post->ID, '_latest_revision', true );
+				query_posts( 'p=' . $last_public );
+//				$revision_args = array(
+//										'post_parent' => $post->ID,
+//										'post_type' => 'revision',
+//										'post_status' => array( 'publish', 'inherit' ),
+//										'numberposts' => 1,
+//										'order' => 'DESC',
+//										'orderby' => 'modified'
+//									);
+//				$revisions = get_children( $revision_args );
 //		var_dump($revision_args);
 //	var_dump($revisions);
-				$revision = null;
-				foreach ( $revisions as $post_revision ) :
-					if ( $post_revision->post_modified !== $post->post_modified ) :
-						$revision = $post_revision;
-					endif;
-				endforeach;
+//				$revision = get_post( $last_public );
+//				foreach ( $revisions as $post_revision ) :
+//					if ( $post_revision->post_modified !== $post->post_modified ) :
+//						$revision = $post_revision;
+//					endif;
+//				endforeach;
 //	var_dump($revision);
 //				if ( $revision ) :
 //					$revision->post_status = 'publish';

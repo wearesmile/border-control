@@ -176,7 +176,7 @@ class Border_Control {
 //
 //		//filter the post data
 //		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
-//		$this->loader->add_filter( 'wp_insert_post', $plugin_admin, 'sbc_detect_published_revisions', 99, 3 );
+		$this->loader->add_filter( 'wp_insert_post', $plugin_admin, 'sbc_detect_published_revisions', 99, 3 );
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_register_pending' );
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_manage_caps', 99 );
 		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 99, 2 );
@@ -202,8 +202,8 @@ class Border_Control {
 //		$this->loader->add_action( 'wp', $plugin_public, 'sbc_override_404' );
 //		$this->loader->add_action( 'pre_handle_404', $plugin_public, 'sbc_override_sbc_404' );
 		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_allow_pending_posts' );
-		$this->loader->add_action( 'wp', $plugin_public, 'sbc_revision_the_post' );
-//		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post' );
+//		$this->loader->add_action( 'wp', $plugin_public, 'sbc_revision_the_post' );
+		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post', 99, 1 );
 
 	}
 

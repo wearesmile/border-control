@@ -1217,62 +1217,60 @@ class Border_Control_Admin {
 	public function sbc_detect_published_revisions( $post_id, $post, $update ) {
 		if ( 'revision' === $post->post_type ) :
 			$post_parent = get_post( $post->post_parent );
-			$frontpage_id = (int) get_option( 'page_on_front' );
-			$frontpage = get_post( $frontpage_id );
+//			$frontpage_id = (int) get_option( 'page_on_front' );
+//			$frontpage = get_post( $frontpage_id );
 		
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		
 			if ( in_array( $post_parent->post_type, $post_types ) ) :
-				if ( $frontpage_id === $post->post_parent || $frontpage->post_parent === $post->post_parent ) :
-					// If the non revision post is the homepage, or if the homepage post parent is the same as this post parent
-					if ( 'publish' === $post_parent->post_status ) :
-						// if page on front is not post parent
-						// find page on front, return to revision with post status of inherit
-						if ( $frontpage_id !== $post->post_parent ) :
-							$frontpage->post_type = "revision";
-							$frontpage->post_status = "inherit";
-							wp_update_post( $frontpage );
-						endif;
-						$post->post_status = 'publish';
-						wp_update_post( $post );
-		
-						update_option( 'page_on_front', $post->post_parent );
-					else :
-						// GET THE LATEST PUBLISHED REVISION AND MAKE IT THE SAME POST TYPE
-						
-						$revision_args = array(
-												'post_parent' => $post->post_parent,
-												'post_type' => 'revision',
-												'post_status' => 'publish',
-												'numberposts' => 1,
-												'order' => 'DESC',
-												'orderby' => 'modified'
-											);
-						$revisions = get_children( $revision_args );
-						$revision;
-						if ( ! empty( $revisions ) ) :
-							foreach ( $revisions as $post_revision ) :
-								if ( $post_revision->post_modified !== $post_object->post_modified ) :
-									$revision = $post_revision;
-								endif;
-							endforeach;
-
-							if ( $revision ) :
-								$revision->post_type = $post_parent->post_type;
-								wp_update_post( $revision );
-							endif;
-
-							wp_update_post( $post );
-							update_option( 'page_on_front', $post_id );
-						endif;
-					endif;
-					return;
-				endif;
+//				if ( $frontpage_id === $post->post_parent || $frontpage->post_parent === $post->post_parent ) :
+//					// If the non revision post is the homepage, or if the homepage post parent is the same as this post parent
+//					if ( 'publish' === $post_parent->post_status ) :
+//						// if page on front is not post parent
+//						// find page on front, return to revision with post status of inherit
+//						if ( $frontpage_id !== $post->post_parent ) :
+//							$frontpage->post_type = "revision";
+//							$frontpage->post_status = "inherit";
+//							wp_update_post( $frontpage );
+//						endif;
+//						$post->post_status = 'publish';
+//						wp_update_post( $post );
+//		
+//						update_option( 'page_on_front', $post->post_parent );
+//					else :
+//						// GET THE LATEST PUBLISHED REVISION AND MAKE IT THE SAME POST TYPE
+//						
+//						$revision_args = array(
+//												'post_parent' => $post->post_parent,
+//												'post_type' => 'revision',
+//												'post_status' => 'publish',
+//												'numberposts' => 1,
+//												'order' => 'DESC',
+//												'orderby' => 'modified'
+//											);
+//						$revisions = get_children( $revision_args );
+//						$revision;
+//						if ( ! empty( $revisions ) ) :
+//							foreach ( $revisions as $post_revision ) :
+//								if ( $post_revision->post_modified !== $post_object->post_modified ) :
+//									$revision = $post_revision;
+//								endif;
+//							endforeach;
+//
+//							if ( $revision ) :
+//								$revision->post_type = $post_parent->post_type;
+//								wp_update_post( $revision );
+//							endif;
+//
+//							wp_update_post( $post );
+//							update_option( 'page_on_front', $post_id );
+//						endif;
+//					endif;
+//					return;
+//				endif;
 				if ( 'publish' === $post_parent->post_status ) :
-					$post->post_status = 'publish';
-					wp_update_post( $post );
-					return;
+					$test = add_post_meta( $post->post_parent, '_latest_revision', $post_id, true );
 				endif;
 			endif;
 			
@@ -1296,10 +1294,9 @@ class Border_Control_Admin {
 	}
 	public function sbc_publish_check( $data, $postarr ) {
 		// Get correct permissions
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
-		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
-		if ( empty( $postarr['post_ID'] ) ) return;
-		if ( ! current_user_can( 'edit_post', $postarr['post_ID'] ) ) return;
+//		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+//		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
+//		if ( empty( $postarr['post_ID'] ) ) return;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $data['post_type'], $post_types ) ) :
