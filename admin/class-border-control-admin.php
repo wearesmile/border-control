@@ -1281,7 +1281,7 @@ class Border_Control_Admin {
 //					return;
 //				endif;
 				if ( 'publish' === $post_parent->post_status ) :
-					$test = add_post_meta( $post->post_parent, '_latest_revision', $post_id, true );
+					update_post_meta( $post->post_parent, '_latest_revision', $post_id );
 				endif;
 			endif;
 			
