@@ -125,33 +125,30 @@ class Border_Control_Public {
 		return $query;
 	}*/
 	
+	public function sbc_override_main_loop() {
+		
+	}
+	
 	public function sbc_set_the_post( $post_object ) {
-		global $wp_query;
-		if ( ! is_admin() ) :
-			$post = $wp_query->posts[0];
-//		var_dump($post);
+		global $post;
+		if ( ! is_admin() && is_main_query() ) :
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
-//		echo '<hr>';
-//		var_dump($wp_query);
-//		var_dump(in_array( $post->post_type, $post_types ));
-//		var_dump('publish' !== $post->post_status && in_array( $post->post_type, $post_types ));
 			if ( 'publish' !== $post->post_status && in_array( $post->post_type, $post_types ) ) :
-//		echo "<pre>";
-		
-		
-		
-//		
-//	var_dump($post->ID);	
-//	var_dump(wp_get_post_revisions( $post->ID ));	
-//		
-//		die;
+
 				$last_public = get_post_meta( $post->ID, '_latest_revision', true );
-//		var_dump($wp_query);
-//				query_posts( 'p=' . $last_public );
-//		echo '<hr>';
-//		var_dump($wp_query->the_post);
+				$revision_post_object = get_post( $last_public );
+				$revision_post_object->ID = $post_object->ID;
+				$revision_post_object->post_status = $post_object->post_status;
+				$revision_post_object->post_name = $post_object->post_name;
+				$revision_post_object->post_parent = $post_object->post_parent;
+				$revision_post_object->guid = $post_object->guid;
+				$revision_post_object->menu_order = $post_object->menu_order;
+				$revision_post_object->post_mime_type = $post_object->post_mime_type;
+				$revision_post_object->comment_count = $post_object->comment_count;
+				$post = $revision_post_object;
+				setup_postdata( $post );
 			endif;
 		endif;
 	}
@@ -251,7 +248,11 @@ class Border_Control_Public {
 	
 	public function sbc_allow_pending_posts( $query ) {
 		global $wp_query;
-		if ( ! is_admin() ) : //&& $wp_query->is_main_query ) :
+		var_dump($query);
+
+		if ( ! is_admin() && isset( $query->is_main_query ) ) :
+		var_dump($query);
+		die;
 //		var_dump(empty( $query->query_vars['post_status'] ) && is_main_query() );
 //			echo "<pre>"; var_dump($query);
 //		var_dump(empty( $query->query_vars['post_status'] ));
