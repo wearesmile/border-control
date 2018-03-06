@@ -1310,12 +1310,12 @@ class Border_Control_Admin {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $data['post_type'], $post_types ) ) :
-			if ( empty( $postarr['post_ID'] ) ) :
+			if ( empty( $postarr['ID'] ) ) :
 				$data['post_status'] = 'sbc_publish';
 			else :
 				if ( 'pending' === $data['post_status'] ) :
 					$data['post_status'] = 'sbc_pending';
-				elseif ( ! current_user_can( 'publish_post', $postarr['post_ID'] ) ) :
+				elseif ( ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
 					if ( 'publish' === $data['post_status'] ) :
 						$data['post_status'] = 'sbc_pending';
 					endif;
