@@ -79,6 +79,6 @@ class Border_Control_Public {
 				setup_postdata( $revision_post_object );
 			endif;
 		endif;
-		return $post;
+		return $post_object;
 	}
 }
