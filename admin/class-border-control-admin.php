@@ -1300,13 +1300,15 @@ class Border_Control_Admin {
 		
 	}
 	public function sbc_publish_revision( $new_status, $old_status, $post ) {
+
 		if ( $new_status === $old_status )
 			return;
-		if ( 'publish' !== $new_status )
+		if ( 'publish' === $new_status )
 			return;
-		
+
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+
 		if ( in_array( $post->post_type, $post_types ) ) :
 			$revisions = wp_get_post_revisions( $post->ID, array(
 				'posts_per_page' => 1
@@ -1314,6 +1316,7 @@ class Border_Control_Admin {
 			foreach ( $revisions as $revision ) :
 				update_post_meta( $post->ID, '_latest_revision', $revision->ID );
 			endforeach;
+			
 		endif;
 		return;
 	}
