@@ -126,21 +126,21 @@ class Border_Control_Admin {
 			'borderControlPage'
 		);
 
-//		add_settings_field(
-//			'sbc_users',
-//			__( 'Users who can approve moderation', 'smile' ),
-//			array( $this, 'sbc_users_render' ),
-//			'borderControlPage',
-//			'sbc_borderControlPage_section'
-//		);
-//
-//		add_settings_field(
-//			'sbc_role',
-//			__( 'User roles which can moderate', 'smile' ),
-//			array( $this, 'sbc_roles_render' ),
-//			'borderControlPage',
-//			'sbc_borderControlPage_section'
-//		);
+		add_settings_field(
+			'sbc_users',
+			__( 'Users who can approve moderation', 'smile' ),
+			array( $this, 'sbc_users_render' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
+		);
+
+		add_settings_field(
+			'sbc_role',
+			__( 'User roles which can moderate', 'smile' ),
+			array( $this, 'sbc_roles_render' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
+		);
 
 		add_settings_field(
 			'sbc_post_type',
@@ -1212,7 +1212,18 @@ class Border_Control_Admin {
 			'show_in_admin_status_list' => true,
 			'label_count'               => _n_noop( 'Pending <span class="count">(%s)</span>', 'Pending <span class="count">(%s)</span>' ),
 		) );
-		register_post_status( 'sbc_publish', array( // public_pending ???
+		register_post_status( 'sbc_improve', array(
+			'label'                     => _x( 'Needs Improvement', 'sbc' ),
+			'public'                    => true,
+			'internal'                  => false,
+			'private'                   => false,
+			'protected'                 => false,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Needs Improvement <span class="count">(%s)</span>', 'Need Improvement <span class="count">(%s)</span>' ),
+		) );
+		register_post_status( 'sbc_publish', array(
 			'label'                     => _x( 'Pending Publish', 'sbc' ),
 			'public'                    => false,
 			'internal'                  => false,
@@ -1281,12 +1292,30 @@ class Border_Control_Admin {
 //					return;
 //				endif;
 				if ( 'publish' === $post_parent->post_status ) :
-					update_post_meta( $post->post_parent, '_latest_revision', $post_id );
+//					update_post_meta( $post->post_parent, '_latest_revision', $post_id );
 				endif;
 			endif;
 			
 		endif;
 		
+	}
+	public function sbc_publish_revision( $new_status, $old_status, $post ) {
+		if ( $new_status === $old_status )
+			return;
+		if ( 'publish' !== $new_status )
+			return;
+		
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( $post->post_type, $post_types ) ) :
+			$revisions = wp_get_post_revisions( $post->ID, array(
+				'posts_per_page' => 1
+			));
+			foreach ( $revisions as $revision ) :
+				update_post_meta( $post->ID, '_latest_revision', $revision->ID );
+			endforeach;
+		endif;
+		return;
 	}
 	public function sbc_manage_caps() {
 		$editor = get_role( 'editor' );

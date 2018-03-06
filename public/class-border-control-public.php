@@ -60,11 +60,11 @@ class Border_Control_Public {
 	 */
 	public function sbc_set_the_post( WP_Post $post_object ) {
 		global $wp_query;
+		global $post;
 		global $the_previous_post;
 		if ( ! is_admin() && is_main_query() && ( empty( $the_previous_post ) || $the_previous_post !== $post_object->ID ) ) :
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-
 			if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
 				$the_previous_post = $post_object->ID;
 				$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
@@ -76,6 +76,8 @@ class Border_Control_Public {
 				$revision_post_object->menu_order = $post_object->menu_order;
 				$revision_post_object->post_mime_type = $post_object->post_mime_type;
 				$revision_post_object->comment_count = $post_object->comment_count;
+				$post_object = $revision_post_object;
+				$post = $post_object;
 				setup_postdata( $revision_post_object );
 			endif;
 		endif;
