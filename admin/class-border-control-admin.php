@@ -1261,6 +1261,7 @@ class Border_Control_Admin {
 		// Get correct permissions
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
+		if ( 'auto-draft' === $data['post_status'] ) return $data;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $data['post_type'], $post_types ) ) :
