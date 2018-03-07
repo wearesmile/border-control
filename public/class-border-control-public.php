@@ -86,11 +86,48 @@ class Border_Control_Public {
 					$revision_post_object->comment_count = $post_object->comment_count;
 					$post_object = $revision_post_object;
 					$post = $post_object;
-					setup_postdata( $revision_post_object );
+					setup_postdata( $post );
 		
 				endif;
 			endif;
 		endif;
 		return $post_object;
+	}
+	public function sbc_set_the_post1( $query ) {
+		global $the_previous_post;
+		$post_object = $query->queried_object;
+		if ( ! is_admin() && $query->is_main_query() && ( empty( $the_previous_post ) || $the_previous_post !== $post_object->ID ) ) :
+			$options = get_option( 'sbc_settings' );
+			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+			if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
+				$the_previous_post = $post_object->ID;
+				$last_public = (int) get_post_meta( $post_object->ID, '_latest_revision', true );
+				if ( empty( $last_public ) ) :
+					$wp_query->set_404();
+					status_header( 404 );
+					include( get_query_template( '404' ) );
+					exit;
+				else :
+					$query->set( 'pagename', null );
+					$query->set( 'name', null );
+					$query->set( 'p', [ $last_public ] );
+//					$query->set( 'post_type', 'revision' );
+//		var_dump($query);
+//					$revision_post_object = get_post( $last_public );
+////		var_dump($revision_post_object);
+//					$revision_post_object->post_status = $post_object->post_status;
+//					$revision_post_object->post_name = $post_object->post_name;
+//					$revision_post_object->post_parent = $post_object->post_parent;
+//					$revision_post_object->guid = $post_object->guid;
+//					$revision_post_object->menu_order = $post_object->menu_order;
+//					$revision_post_object->post_mime_type = $post_object->post_mime_type;
+//					$revision_post_object->comment_count = $post_object->comment_count;
+//					$post_object = $revision_post_object;
+//					$post = $post_object;
+//					setup_postdata( $post );
+//		
+				endif;
+			endif;
+		endif;
 	}
 }
