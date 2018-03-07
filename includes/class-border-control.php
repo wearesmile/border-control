@@ -161,7 +161,7 @@ class Border_Control {
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_owners_add_meta_box' );
 		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' );
-		$this->loader->add_action( 'transition_post_status', $plugin_admin, 'sbc_publish_revision', 10, 3 );
+		$this->loader->add_action( 'transition_post_status', $plugin_admin, 'sbc_publish_revision', 9999, 3 );
 //		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
 //		$this->loader->add_filter( 'gettext', $plugin_admin, 'sbc_change_publish_button', 10, 2 );
 //		$this->loader->add_action( 'wp_insert_post_data', $plugin_admin, 'sbc_reject_post_save', '99', 2 );
@@ -178,8 +178,8 @@ class Border_Control {
 //		//filter the post data
 //		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_register_pending' );
-		$this->loader->add_action( 'init', $plugin_admin, 'sbc_manage_caps', 99 );
-		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 99, 2 );
+		$this->loader->add_action( 'init', $plugin_admin, 'sbc_manage_caps', 9999 );
+		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 9999, 2 );
 
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_force_revisions' );
 //		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_override_pending_post_status' );
@@ -199,7 +199,7 @@ class Border_Control {
 //		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 //		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		
-		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post', 99, 1 );
+		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post', 9999, 1 );
 //		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_set_the_post1', 1, 1 );
 //		$this->loader->add_action( '__before_loop', $plugin_public, 'sbc_alter_query' );
 //		$this->loader->add_action( '__after_loop', $plugin_public, 'sbc_alter_query' );

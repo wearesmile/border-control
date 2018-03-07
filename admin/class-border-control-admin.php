@@ -1221,6 +1221,8 @@ class Border_Control_Admin {
 	}
 	public function sbc_publish_revision( $new_status, $old_status, $post ) {
 
+		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return;
+		
 		if ( $new_status === $old_status )
 			return;
 		if ( 'publish' === $new_status )
@@ -1257,7 +1259,7 @@ class Border_Control_Admin {
 	}
 	public function sbc_publish_check( $data, $postarr ) {
 		// Get correct permissions
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
