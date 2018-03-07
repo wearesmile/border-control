@@ -1257,7 +1257,7 @@ class Border_Control_Admin {
 	}
 	public function sbc_publish_check( $data, $postarr ) {
 		// Get correct permissions
-//		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
