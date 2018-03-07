@@ -1225,7 +1225,7 @@ class Border_Control_Admin {
 		
 		if ( $new_status === $old_status )
 			return;
-		if ( 'publish' === $new_status )
+		if ( 'publish' !== $new_status )
 			return;
 
 		$options = get_option( 'sbc_settings' );
@@ -1258,7 +1258,6 @@ class Border_Control_Admin {
 		}
 	}
 	public function sbc_publish_check( $data, $postarr ) {
-		// Get correct permissions
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
 		if ( 'auto-draft' === $data['post_status'] ) return $data;
