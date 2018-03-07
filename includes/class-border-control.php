@@ -166,7 +166,7 @@ class Border_Control {
 //		$this->loader->add_filter( 'gettext', $plugin_admin, 'sbc_change_publish_button', 10, 2 );
 //		$this->loader->add_action( 'wp_insert_post_data', $plugin_admin, 'sbc_reject_post_save', '99', 2 );
 //		$this->loader->add_action( 'post_submitbox_misc_actions', $plugin_admin, 'sbc_display_post_status', 10, 1 );
-//		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_rejected_post_status' );
+
 //		$this->loader->add_action( 'load-post.php', $plugin_admin, 'sbc_create_draft' );
 //		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_hide_pending', 1 );
 //		$this->loader->add_action( 'admin_notices', $plugin_admin, 'sbc_governence_noticies' );

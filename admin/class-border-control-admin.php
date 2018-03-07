@@ -4,7 +4,7 @@
  * The admin-specific functionality of the plugin.
  *
  * @link       https://wearesmile.com
- * @since      1.0§.0
+ * @since      1.0.0
  *
  * @package    Border_Control
  * @subpackage Border_Control/admin
@@ -419,22 +419,6 @@ class Border_Control_Admin {
 	}
 
 	/**
-	 * Rejected post status.
-	 *
-	 * @author Warren Reeves
-	 */
-	public function sbc_rejected_post_status() {
-		register_post_status( 'rejected', array(
-			'label'                     => _x( 'Requires Improvement', 'post' ),
-			'public'                    => false,
-			'exclude_from_search'       => true,
-			'show_in_admin_all_list'    => true,
-			'show_in_admin_status_list' => true,
-			'label_count'               => _n_noop( 'Require Improvement <span class="count">(%s)</span>', 'Require Improvement <span class="count">(%s)</span>' ),
-		) );
-	}
-
-	/**
 	 * Rejected submit button.
 	 *
 	 * @author Warren Reeves
@@ -445,7 +429,7 @@ class Border_Control_Admin {
 		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 			$owners = get_post_meta( $post->ID, 'owners_owner', false );
 			$user_id = get_current_user_id();
-			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) && 'pending' === $post->post_status ) :
+			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) && 'sbc_pending' === $post->post_status ) :
 				?>
 				<div class="reject-action" style="float: left; margin-right: 10px;">
 					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
@@ -1201,8 +1185,8 @@ class Border_Control_Admin {
 	}
 	
 	public function sbc_register_pending() {
-		register_post_status( 'sbc_pending', array( // public_pending ???
-			'label'                     => _x( 'Pending', 'sbc' ),
+		register_post_status( 'sbc_pending', array(
+			'label'                     => _x( 'Pending Review', 'sbc' ),
 			'public'                    => true,
 			'internal'                  => false,
 			'private'                   => false,
@@ -1210,9 +1194,9 @@ class Border_Control_Admin {
 			'exclude_from_search'       => false,
 			'show_in_admin_all_list'    => true,
 			'show_in_admin_status_list' => true,
-			'label_count'               => _n_noop( 'Pending <span class="count">(%s)</span>', 'Pending <span class="count">(%s)</span>' ),
+			'label_count'               => _n_noop( 'Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>' ),
 		) );
-		register_post_status( 'sbc_improve', array(
+		register_post_status( 'sbc_improve', array(//Required?
 			'label'                     => _x( 'Needs Improvement', 'sbc' ),
 			'public'                    => true,
 			'internal'                  => false,

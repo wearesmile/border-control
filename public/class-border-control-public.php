@@ -68,17 +68,26 @@ class Border_Control_Public {
 			if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
 				$the_previous_post = $post_object->ID;
 				$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
-				$revision_post_object = get_post( $last_public );
-				$revision_post_object->post_status = $post_object->post_status;
-				$revision_post_object->post_name = $post_object->post_name;
-				$revision_post_object->post_parent = $post_object->post_parent;
-				$revision_post_object->guid = $post_object->guid;
-				$revision_post_object->menu_order = $post_object->menu_order;
-				$revision_post_object->post_mime_type = $post_object->post_mime_type;
-				$revision_post_object->comment_count = $post_object->comment_count;
-				$post_object = $revision_post_object;
-				$post = $post_object;
-				setup_postdata( $revision_post_object );
+				if ( empty( $last_public ) ) :
+					$wp_query->set_404();
+					status_header(404);
+					include( get_query_template( '404' ) );
+					exit;
+				else :
+		
+					$revision_post_object = get_post( $last_public );
+					$revision_post_object->post_status = $post_object->post_status;
+					$revision_post_object->post_name = $post_object->post_name;
+					$revision_post_object->post_parent = $post_object->post_parent;
+					$revision_post_object->guid = $post_object->guid;
+					$revision_post_object->menu_order = $post_object->menu_order;
+					$revision_post_object->post_mime_type = $post_object->post_mime_type;
+					$revision_post_object->comment_count = $post_object->comment_count;
+					$post_object = $revision_post_object;
+					$post = $post_object;
+					setup_postdata( $revision_post_object );
+		
+				endif;
 			endif;
 		endif;
 		return $post_object;
