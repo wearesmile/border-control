@@ -70,12 +70,13 @@ class Border_Control_Public {
 				$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
 				if ( empty( $last_public ) ) :
 					$wp_query->set_404();
-					status_header(404);
+					status_header( 404 );
 					include( get_query_template( '404' ) );
 					exit;
 				else :
 		
 					$revision_post_object = get_post( $last_public );
+//		var_dump($revision_post_object);
 					$revision_post_object->post_status = $post_object->post_status;
 					$revision_post_object->post_name = $post_object->post_name;
 					$revision_post_object->post_parent = $post_object->post_parent;

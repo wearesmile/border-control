@@ -177,7 +177,6 @@ class Border_Control {
 //
 //		//filter the post data
 //		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
-		$this->loader->add_filter( 'wp_insert_post', $plugin_admin, 'sbc_detect_published_revisions', 99, 3 );
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_register_pending' );
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_manage_caps', 99 );
 		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 99, 2 );
