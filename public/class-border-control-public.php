@@ -62,7 +62,11 @@ class Border_Control_Public {
 		global $wp_query;
 		global $post;
 		global $the_previous_post;
-		if ( ! is_admin() && is_main_query() && ( empty( $the_previous_post ) || $the_previous_post !== $post_object->ID ) ) :
+		global $sbc_disable;
+		if ( ! isset( $sbc_disable ) || ( isset( $sbc_disable ) && true !== $sbc_disable ) ) :
+			$sbc_disable = false;
+		endif;
+		if ( ! is_admin() && true !== $sbc_disable && ( empty( $the_previous_post ) || $the_previous_post !== $post_object->ID ) ) :
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 			if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
@@ -99,6 +103,7 @@ class Border_Control_Public {
 		
 				endif;
 			endif;
+		$sbc_disable = false;
 		endif;
 		return $post_object;
 	}
@@ -112,8 +117,12 @@ class Border_Control_Public {
 		global $wp_query;
 		global $post;
 		global $the_previous_post;
+		global $sbc_disable;
 		$post_object = $wp_query->queried_object;
-		if ( ! is_admin() ) :
+		if ( ! isset( $sbc_disable ) || ( isset( $sbc_disable ) && true !== $sbc_disable ) ) :
+			$sbc_disable = false;
+		endif;
+		if ( ! is_admin() && true !== $sbc_disable ) :
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 			if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
@@ -148,6 +157,7 @@ class Border_Control_Public {
 					setup_postdata( $post );
 				endif;
 			endif;
+			$sbc_disable = false;
 		endif;
 		return $post_object;
 	}
