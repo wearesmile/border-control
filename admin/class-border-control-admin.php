@@ -425,11 +425,10 @@ class Border_Control_Admin {
 	 */
 	public function sbc_reject_submit_box() {
 		global $post;
-
 		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 			$owners = get_post_meta( $post->ID, 'owners_owner', false );
 			$user_id = get_current_user_id();
-			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) && 'sbc_pending' === $post->post_status ) :
+			if ( ( empty( $owners ) || ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) ) ) && 'sbc_pending' === $post->post_status ) :
 				?>
 				<div class="reject-action" style="float: left; margin-right: 10px;">
 					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
@@ -505,7 +504,7 @@ class Border_Control_Admin {
 				$user = wp_get_current_user();
 				if ( isset( $postarr['reject'] ) ) : // Email the author and all other owners that x has rejected the post.
 					delete_post_meta( $post_id, '_approve-list' ); // Reset approve list.
-					$data['post_status'] = 'rejected'; // Change status to rejected.
+					$data['post_status'] = 'sbc_improve'; // Change status to rejected.
 
 					$owners = get_post_meta( $post->ID, 'owners_owner', false );
 
@@ -600,7 +599,7 @@ class Border_Control_Admin {
 							$data['post_author'] = $user->ID;
 							$data['post_status'] = 'pending'; // Change status to pending review.
 						endif;
-					elseif ( 'rejected' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
+					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
 						$pending_review_email = true;
 					else :
 						$data['post_author'] = $user->ID;
