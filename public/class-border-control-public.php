@@ -78,7 +78,6 @@ class Border_Control_Public {
 					include( get_query_template( '404' ) );
 					exit;
 				else :
-		
 					$revision_post_object = get_post( $last_public );
 
 					$revision_post_object->post_status = $post_object->post_status;
@@ -106,6 +105,44 @@ class Border_Control_Public {
 		$sbc_disable = false;
 		endif;
 		return $post_object;
+	}
+	public function sbc_set_the_posts( array $posts, WP_Query $wp_query ) {
+		global $sbc_disable;
+		if ( ! isset( $sbc_disable ) || ( isset( $sbc_disable ) && true !== $sbc_disable ) ) :
+			$sbc_disable = false;
+		endif;
+		if ( ! is_admin() && true !== $sbc_disable ) :
+			$options = get_option( 'sbc_settings' );
+			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+			foreach ( $posts as $key => $post_object ) :
+				if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
+					$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
+					if ( empty( $last_public ) ) :
+						if ( is_singular() ) :
+							$wp_query->set_404();
+							status_header( 404 );
+							include( get_query_template( '404' ) );
+							exit;
+						else :
+							unset( $posts[$key] );
+						endif;
+					else :
+						$revision_post_object = get_post( $last_public );
+
+						$revision_post_object->post_status = $post_object->post_status;
+						$revision_post_object->post_name = $post_object->post_name;
+						$revision_post_object->post_parent = $post_object->post_parent;
+						$revision_post_object->guid = $post_object->guid;
+						$revision_post_object->menu_order = $post_object->menu_order;
+						$revision_post_object->post_mime_type = $post_object->post_mime_type;
+						$revision_post_object->comment_count = $post_object->comment_count;
+						$revision_post_object->post_type = $post_object->post_type;
+						$posts[$key] = $revision_post_object;
+					endif;
+				endif;
+			endforeach;
+		endif;
+		return $posts;
 	}
 	/**
 	 * Replace the_post with data from its revision.
