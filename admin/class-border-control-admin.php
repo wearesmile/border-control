@@ -490,10 +490,10 @@ class Border_Control_Admin {
 	 */
 	public function sbc_reject_post_save( $data, $postarr ) {
 		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
-		
+
 		if ( empty( $post ) )
 			return $data;
-		
+
 		if ( $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -1045,7 +1045,7 @@ class Border_Control_Admin {
 					if ( 'draft' === $post->post_status || 'pending' === $post->post_status ) :
 						return false;
 					endif;
-		
+
 					if ( 'publish' !== $post->post_status ) :
 
 						// Set the original post status to custom post status to await approval
@@ -1055,7 +1055,7 @@ class Border_Control_Admin {
 							'post_status'   => 'awaiting_publish',
 						);
 						wp_update_post( $args );
-		
+
 					endif;
 
 					$current_user = wp_get_current_user();
@@ -1172,7 +1172,7 @@ class Border_Control_Admin {
 		return $length === 0 ||
 		(substr($haystack, -$length) === $needle);
 	}
-	
+
 	public function sbc_override_edited_post( $query ) {
 //		$screen = get_current_screen();
 //		echo '<pre>'; var_dump($query); echo '</pre>';
@@ -1182,7 +1182,7 @@ class Border_Control_Admin {
 //			endif;
 //		endif;
 	}
-	
+
 	public function sbc_register_pending() {
 		register_post_status( 'sbc_pending', array(
 			'label'                     => _x( 'Pending Review', 'sbc' ),
@@ -1221,7 +1221,7 @@ class Border_Control_Admin {
 	public function sbc_publish_revision( $new_status, $old_status, $post ) {
 
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return;
-		
+
 		if ( $new_status === $old_status )
 			return;
 		if ( 'publish' !== $new_status )
@@ -1237,7 +1237,7 @@ class Border_Control_Admin {
 			foreach ( $revisions as $revision ) :
 				update_post_meta( $post->ID, '_latest_revision', $revision->ID );
 			endforeach;
-			
+
 		endif;
 		return;
 	}
@@ -1263,7 +1263,7 @@ class Border_Control_Admin {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $data['post_type'], $post_types ) ) :
-			if ( empty( $postarr['ID'] ) ) :
+			if ( ! $this->sbc_can_user_moderate() && empty( $postarr['ID'] ) ) :
 				$data['post_status'] = 'sbc_publish';
 			else :
 				if ( 'pending' === $data['post_status'] ) :
@@ -1277,7 +1277,7 @@ class Border_Control_Admin {
 		endif;
 		return $data;
 	}
-	
+
 	public function sbc_force_revisions() {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
