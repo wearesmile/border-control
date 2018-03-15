@@ -1285,4 +1285,40 @@ class Border_Control_Admin {
 			add_post_type_support( $post_type, 'revisions' );
 		endforeach;
 	}
+
+
+	public function sbc_save_post_revision_meta( $post_id, $data ) {
+
+		// Get the latest revision.
+		$last_public = get_post_meta( $post_id, '_latest_revision', true );
+
+		if ( $last_public ) {
+
+			// Duplicate all post meta just in two SQL queries.
+			global $wpdb;
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM $wpdb->postmeta
+					 WHERE post_id = %d
+					",
+					$last_public
+				)
+			);
+			$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+			if ( 0 !== count( $post_meta_infos ) ) {
+				$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+				foreach ( $post_meta_infos as $meta_info ) {
+					$meta_key = $meta_info->meta_key;
+					if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
+						continue;
+					endif;
+					$meta_value = addslashes( $meta_info->meta_value );
+					$sql_query_sel[] = "SELECT $last_public, '$meta_key', '$meta_value'";
+				}
+				$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
+				$wpdb->query( $sql_query );
+			}
+
+		}
+	}
 }

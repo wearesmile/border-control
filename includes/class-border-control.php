@@ -156,7 +156,7 @@ class Border_Control {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' ); // Include Styles.
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' ); // Include Scripts.
-		
+
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' ); // Create BC settings menu item.
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' ); // Setup the BC settings screen.
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_owners_add_meta_box' ); // Add owners metabox to post edit screen.
@@ -172,7 +172,7 @@ class Border_Control {
 //		$this->loader->add_action( 'admin_notices', $plugin_admin, 'sbc_governence_noticies' );
 //		$this->loader->add_action( 'wp_dashboard_setup', $plugin_admin, 'sbc_awaiting_review_approval_widgets' );
 //		$this->loader->add_action( 'wp_insert_post', $plugin_admin, 'sbc_after_governance_update', 99, 3 );
-//		
+//
 //		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'sbc_override_edited_post', 99 );
 //
 //		//filter the post data
@@ -183,6 +183,9 @@ class Border_Control {
 
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_force_revisions' ); // Enable revisions on selected post types.
 //		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_override_pending_post_status' );
+
+		$this->loader->add_action( 'pre_post_update', $plugin_admin, 'sbc_save_post_revision_meta', 1, 2 );
+
 	}
 
 	/**
@@ -198,13 +201,13 @@ class Border_Control {
 
 //		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 //		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		
+
 //		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post', 999999, 1 );
 		$this->loader->add_action( 'the_posts', $plugin_public, 'sbc_set_the_posts', 999999, 2 );
 //		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_set_the_post1', 1, 1 );
 //		$this->loader->add_action( '__before_loop', $plugin_public, 'sbc_alter_query' );
 //		$this->loader->add_action( '__after_loop', $plugin_public, 'sbc_alter_query' );
-		
+
 //		$this->loader->add_action( 'wpseo_head', $plugin_public, 'sbc_seo_head', 9999 );
 
 	}
