@@ -126,6 +126,7 @@ class Border_Control_Public {
 						if ( is_singular() ) :
 							$wp_query->set_404();
 							status_header( 404 );
+							echo '<!-- BORDER CONTROLLED 404 -->';
 							include( get_query_template( '404' ) );
 							exit;
 						else :
