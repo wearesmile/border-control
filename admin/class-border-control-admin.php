@@ -1277,6 +1277,18 @@ class Border_Control_Admin {
 		endif;
 		return $data;
 	}
+	
+	public function sbc_post_states( $post_states, $post ) {
+		$post_status = $_REQUEST['post_status'];
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( $post->post_type, $post_types ) ) :
+			if ( 'sbc_pending' == $post->post_status && 'sbc_pending' != $post_status ) {
+				$post_states['sbc_pending'] = _x( 'Pending Review', 'post status' );
+			}
+		endif;
+		return $post_states;
+	}
 
 	public function sbc_force_revisions() {
 		$options = get_option( 'sbc_settings' );

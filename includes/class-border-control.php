@@ -185,6 +185,8 @@ class Border_Control {
 //		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_override_pending_post_status' );
 
 		$this->loader->add_action( 'pre_post_update', $plugin_admin, 'sbc_save_post_revision_meta', 1, 2 );
+		
+		$this->loader->add_filter( 'display_post_states', $plugin_admin, 'sbc_post_states', 10, 2 ); // Show as pending in post list
 
 	}
 
