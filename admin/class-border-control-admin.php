@@ -1274,8 +1274,41 @@ class Border_Control_Admin {
 					endif;
 				endif;
 			endif;
+			if ( 'sbc_pending' === $data['post_status'] && ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
+				$data['post_name'] = $postarr['post_name'];
+			endif;
 		endif;
 		return $data;
+	}
+	
+	public function sbc_hide_slug_box( $return, $post_id, $new_title, $new_slug, $post ) {
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( get_post_type( $post ), $post_types ) && ! current_user_can( 'publish_post', $post_id ) ) :
+			$dom = new DOMDocument;
+			$dom->validateOnParse = false;
+			$dom->loadHTML( $return );
+
+			/* get the element to be deleted */
+			$div=$dom->getElementById('edit-slug-buttons');
+
+			/* delete the node */
+			if ( $div && $div->nodeType==XML_ELEMENT_NODE ) :
+				$div->parentNode->removeChild( $div );
+			endif;
+			$return = $dom->saveHTML();
+			$dom = null;
+		endif;
+		return $return;
+	}
+	
+	public function sbc_remove_post_fields() {
+		global $pagenow;
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( 'post.php' === $pagenow && isset( $_GET['post'] ) && in_array( get_post_type( $_GET['post'] ), $post_types ) && ! current_user_can( 'publish_post', $_GET['post'] ) ) :
+			remove_meta_box( 'slugdiv' , 'page' , 'normal' );
+		endif;
 	}
 	
 	public function sbc_post_states( $post_states, $post ) {
@@ -1288,6 +1321,11 @@ class Border_Control_Admin {
 			}
 		endif;
 		return $post_states;
+	}
+	
+	public function sbc_hide_permalink_edit_for_non_publishers( $post ) {
+		global $viewable;
+		$viewable = false;
 	}
 
 	public function sbc_force_revisions() {

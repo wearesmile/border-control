@@ -187,7 +187,10 @@ class Border_Control {
 		$this->loader->add_action( 'pre_post_update', $plugin_admin, 'sbc_save_post_revision_meta', 1, 2 );
 		
 		$this->loader->add_filter( 'display_post_states', $plugin_admin, 'sbc_post_states', 10, 2 ); // Show as pending in post list
-
+//		$this->loader->add_filter( 'edit_form_before_permalink', $plugin_admin, 'sbc_hide_permalink_edit_for_non_publishers', 10, 1 ); // Do not allow users to modify if they cannot publish
+		
+		$this->loader->add_filter( 'get_sample_permalink_html', $plugin_admin, 'sbc_hide_slug_box', 10, 5 );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_remove_post_fields' );
 	}
 
 	/**
