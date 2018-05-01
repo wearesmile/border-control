@@ -1428,4 +1428,10 @@ class Border_Control_Admin {
 
 		}
 	}
+
+	public function remove_quick_edit( $actions ) {
+		unset($actions['inline hide-if-no-js']);
+		return $actions;
+	}
+
 }
