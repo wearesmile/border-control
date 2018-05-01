@@ -50,10 +50,9 @@ class Border_Control_Public {
 		
 		global $sbc_disable;
 		
-		$sbc_disable = true;
-		
-		if ( is_preview() ) :
-			$sbc_disable = false;
+		$sbc_disable = false;
+		if ( is_preview() || ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
+			$sbc_disable = true;
 		endif;
 
 		$this->plugin_name = $plugin_name;
