@@ -47,6 +47,14 @@ class Border_Control_Public {
 	 * @param      string $version    The version of this plugin.
 	 */
 	public function __construct( string $plugin_name, string $version ) {
+		
+		global $sbc_disable;
+		
+		$sbc_disable = true;
+		
+		if ( is_preview() ) :
+			$sbc_disable = false;
+		endif;
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
@@ -75,6 +83,7 @@ class Border_Control_Public {
 				if ( empty( $last_public ) ) :
 					$wp_query->set_404();
 					status_header( 404 );
+					echo '<!-- BORDER CONTROLLED 404 -->';
 					include( get_query_template( '404' ) );
 					exit;
 				else :
@@ -123,7 +132,7 @@ class Border_Control_Public {
 							'post_status' => 'sbc_publish',
 						);
 						wp_update_post( $unpublished_post ); // Hack the post status.
-						if ( is_singular() ) :
+						if ( is_singular() && ! is_preview() ) :
 							$wp_query->set_404();
 							status_header( 404 );
 							echo '<!-- BORDER CONTROLLED 404 -->';
@@ -174,6 +183,7 @@ class Border_Control_Public {
 				if ( empty( $last_public ) ) :
 					$wp_query->set_404();
 					status_header( 404 );
+					echo '<!-- BORDER CONTROLLED 404 -->';
 					include( get_query_template( '404' ) );
 					exit;
 				else :
