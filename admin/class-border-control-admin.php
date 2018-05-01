@@ -4,7 +4,7 @@
  * The admin-specific functionality of the plugin.
  *
  * @link       https://wearesmile.com
- * @since      1.0§.0
+ * @since      1.0.0
  *
  * @package    Border_Control
  * @subpackage Border_Control/admin
@@ -423,41 +423,16 @@ class Border_Control_Admin {
 	}
 
 	/**
-	 * Rejected post status.
-	 *
-	 * @author Warren Reeves
-	 */
-	public function sbc_rejected_post_status() {
-		register_post_status( 'rejected', array(
-			'label'                     => _x( 'Requires Improvement', 'post' ),
-			'public'                    => false,
-			'exclude_from_search'       => true,
-			'show_in_admin_all_list'    => true,
-			'show_in_admin_status_list' => true,
-			'label_count'               => _n_noop( 'Require Improvement <span class="count">(%s)</span>', 'Require Improvement <span class="count">(%s)</span>' ),
-		) );
-		register_post_status( 'awaiting_publish', array(
-			'label'                     => _x( 'Awaiting Initial Publish', 'post' ),
-			'public'                    => false,
-			'exclude_from_search'       => true,
-			'show_in_admin_all_list'    => true,
-			'show_in_admin_status_list' => true,
-			'label_count'               => _n_noop( 'Awaiting Initial Publish <span class="count">(%s)</span>', 'Awaiting Initial Publish <span class="count">(%s)</span>' ),
-		) );
-	}
-
-	/**
 	 * Rejected submit button.
 	 *
 	 * @author Warren Reeves
 	 */
 	public function sbc_reject_submit_box() {
 		global $post;
-
 		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 			$owners = get_post_meta( $post->ID, 'owners_owner', false );
 			$user_id = get_current_user_id();
-			if ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) && 'pending' === $post->post_status ) :
+			if ( ( empty( $owners ) || ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) ) ) && 'sbc_pending' === $post->post_status ) :
 				?>
 				<div class="reject-action" style="float: left; margin-right: 10px;">
 					<?php submit_button( 'Reject', 'delete', 'reject', false ); ?>
@@ -533,7 +508,7 @@ class Border_Control_Admin {
 				$user = wp_get_current_user();
 				if ( isset( $postarr['reject'] ) ) : // Email the author and all other owners that x has rejected the post.
 					delete_post_meta( $post_id, '_approve-list' ); // Reset approve list.
-					$data['post_status'] = 'rejected'; // Change status to rejected.
+					$data['post_status'] = 'sbc_improve'; // Change status to rejected.
 
 					$owners = get_post_meta( $post->ID, 'owners_owner', false );
 
@@ -628,7 +603,7 @@ class Border_Control_Admin {
 							$data['post_author'] = $user->ID;
 							$data['post_status'] = 'pending'; // Change status to pending review.
 						endif;
-					elseif ( 'rejected' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
+					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
 						$pending_review_email = true;
 					else :
 						$data['post_author'] = $user->ID;
@@ -1080,6 +1055,7 @@ class Border_Control_Admin {
 		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
 
 			$original = get_post_meta( $post_id, 'original', true );
+			// $original is both a check for the editable version of a post and a truthy for if this post is the original. Naming could do with clarification.
 			delete_post_meta( $post_id, 'is_under_review' );
 
 			if ( $original && (int)$original === (int)$post_id ) :
@@ -1092,7 +1068,7 @@ class Border_Control_Admin {
 				return false;
 			else :
 				$args = array(
-					'post_type' => $post_types,
+					'post_type' => get_post_type( $post_id ),
 					'post_status' => 'pending',
 					'meta_query' => array(
 						array(
@@ -1105,9 +1081,7 @@ class Border_Control_Admin {
 				$query = new WP_Query( $args );
 				if ( $query->have_posts() ) :
 					while ( $query->have_posts() ) : $query->the_post();
-						wp_redirect( admin_url( 'post.php?action=edit&post=' . get_the_ID() ) );
-						exit;
-						return false;
+						$_GET['edit_post'] = get_the_ID();
 					endwhile;
 					/* Restore original Post Data */
 					wp_reset_postdata();
@@ -1119,12 +1093,17 @@ class Border_Control_Admin {
 						return false;
 					endif;
 
-					// Set the original post status to custom post status to await approval
-					$args = array(
-						'ID'			=> (string) $post_id,
-						'post_status'   => 'awaiting_publish',
-					);
-					wp_update_post( $args );
+					if ( 'publish' !== $post->post_status ) :
+
+						// Set the original post status to custom post status to await approval
+						$args = array(
+							'ID'			=> (string) $post_id,
+//							'post_status'   => 'pending',
+							'post_status'   => 'awaiting_publish',
+						);
+						wp_update_post( $args );
+
+					endif;
 
 					$current_user = wp_get_current_user();
 					$new_post_author = $current_user->ID;
@@ -1205,7 +1184,7 @@ class Border_Control_Admin {
 						/*
 						 * finally, redirect to the edit post screen for the new draft
 						 */
-						wp_redirect( admin_url( "post.php?action=edit&post=$new_post_id" ) );
+						wp_redirect( get_edit_post_link( $post_id ) );
 						exit;
 					} else {
 						wp_die( "Post creation failed, could not find original post: $post_id" );
@@ -1251,4 +1230,202 @@ class Border_Control_Admin {
 		(substr($haystack, -$length) === $needle);
 	}
 
+	public function sbc_override_edited_post( $query ) {
+//		$screen = get_current_screen();
+//		echo '<pre>'; var_dump($query); echo '</pre>';
+//		if ( $this->sbc_is_controlled_cpt() && is_admin() && $screen->base == 'post' && $query->is_main_query() ) :
+//		die;
+//			if ( get_post_meta( $post_id, 'original', true ) ) :
+//			endif;
+//		endif;
+	}
+
+	public function sbc_register_pending() {
+		register_post_status( 'sbc_pending', array(
+			'label'                     => _x( 'Pending Review', 'sbc' ),
+			'public'                    => true,
+			'internal'                  => false,
+			'private'                   => false,
+			'protected'                 => false,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>' ),
+		) );
+		register_post_status( 'sbc_improve', array(//Required?
+			'label'                     => _x( 'Needs Improvement', 'sbc' ),
+			'public'                    => true,
+			'internal'                  => false,
+			'private'                   => false,
+			'protected'                 => false,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Needs Improvement <span class="count">(%s)</span>', 'Need Improvement <span class="count">(%s)</span>' ),
+		) );
+		register_post_status( 'sbc_publish', array(
+			'label'                     => _x( 'Pending Publish', 'sbc' ),
+			'public'                    => false,
+			'internal'                  => false,
+			'private'                   => false,
+			'protected'                 => true,
+			'exclude_from_search'       => true,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Pending Initial Publish <span class="count">(%s)</span>', 'Pending Initial Publish <span class="count">(%s)</span>' ),
+		) );
+	}
+	public function sbc_publish_revision( $new_status, $old_status, $post ) {
+
+		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return;
+
+		if ( $new_status === $old_status )
+			return;
+		if ( 'publish' !== $new_status )
+			return;
+
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+
+		if ( in_array( $post->post_type, $post_types ) ) :
+			$revisions = wp_get_post_revisions( $post->ID, array(
+				'posts_per_page' => 1
+			));
+			foreach ( $revisions as $revision ) :
+				update_post_meta( $post->ID, '_latest_revision', $revision->ID );
+			endforeach;
+
+		endif;
+		return;
+	}
+	public function sbc_manage_caps() {
+		$editor = get_role( 'editor' );
+
+		// A list of capabilities to remove from editors.
+		$caps = array(
+			'publish_posts',
+			'publish_pages',
+		);
+
+		foreach ( $caps as $cap ) {
+
+			// Remove the capability.
+			$editor->remove_cap( $cap );
+		}
+	}
+	public function sbc_publish_check( $data, $postarr ) {
+		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
+//		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
+		if ( 'auto-draft' === $data['post_status'] ) return $data;
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( $data['post_type'], $post_types ) ) :
+			if ( ! $this->sbc_can_user_moderate() && empty( $postarr['ID'] ) ) :
+				$data['post_status'] = 'sbc_publish';
+			else :
+				if ( 'pending' === $data['post_status'] ) :
+					$data['post_status'] = 'sbc_pending';
+				elseif ( ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
+					if ( 'publish' === $data['post_status'] ) :
+						$data['post_status'] = 'sbc_pending';
+					endif;
+				endif;
+			endif;
+			if ( 'sbc_pending' === $data['post_status'] && ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
+				$data['post_name'] = $postarr['post_name'];
+			endif;
+		endif;
+		return $data;
+	}
+	
+	public function sbc_hide_slug_box( $return, $post_id, $new_title, $new_slug, $post ) {
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( get_post_type( $post ), $post_types ) && ! current_user_can( 'publish_post', $post_id ) ) :
+			$dom = new DOMDocument;
+			$dom->validateOnParse = false;
+			$dom->loadHTML( $return );
+
+			/* get the element to be deleted */
+			$div=$dom->getElementById('edit-slug-buttons');
+
+			/* delete the node */
+			if ( $div && $div->nodeType==XML_ELEMENT_NODE ) :
+				$div->parentNode->removeChild( $div );
+			endif;
+			$return = $dom->saveHTML();
+			$dom = null;
+		endif;
+		return $return;
+	}
+	
+	public function sbc_remove_post_fields() {
+		global $pagenow;
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( 'post.php' === $pagenow && isset( $_GET['post'] ) && in_array( get_post_type( $_GET['post'] ), $post_types ) && ! current_user_can( 'publish_post', $_GET['post'] ) ) :
+			remove_meta_box( 'slugdiv' , 'page' , 'normal' );
+		endif;
+	}
+	
+	public function sbc_post_states( $post_states, $post ) {
+		$post_status = $_REQUEST['post_status'];
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		if ( in_array( $post->post_type, $post_types ) ) :
+			if ( 'sbc_pending' == $post->post_status && 'sbc_pending' != $post_status ) {
+				$post_states['sbc_pending'] = _x( 'Pending Review', 'post status' );
+			}
+		endif;
+		return $post_states;
+	}
+	
+	public function sbc_hide_permalink_edit_for_non_publishers( $post ) {
+		global $viewable;
+		$viewable = false;
+	}
+
+	public function sbc_force_revisions() {
+		$options = get_option( 'sbc_settings' );
+		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
+		foreach ( $post_types as $post_type ) :
+			add_post_type_support( $post_type, 'revisions' );
+		endforeach;
+	}
+
+
+	public function sbc_save_post_revision_meta( $post_id, $data ) {
+
+		// Get the latest revision.
+		$last_public = get_post_meta( $post_id, '_latest_revision', true );
+
+		if ( $last_public ) {
+
+			// Duplicate all post meta just in two SQL queries.
+			global $wpdb;
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM $wpdb->postmeta
+					 WHERE post_id = %d
+					",
+					$last_public
+				)
+			);
+			$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+			if ( 0 !== count( $post_meta_infos ) ) {
+				$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+				foreach ( $post_meta_infos as $meta_info ) {
+					$meta_key = $meta_info->meta_key;
+					if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
+						continue;
+					endif;
+					$meta_value = addslashes( $meta_info->meta_value );
+					$sql_query_sel[] = "SELECT $last_public, '$meta_key', '$meta_value'";
+				}
+				$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
+				$wpdb->query( $sql_query );
+			}
+
+		}
+	}
 }
