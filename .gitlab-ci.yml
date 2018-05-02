@@ -13,15 +13,15 @@ stages:
   - test
   - deploy
 
-codingstandards:
-  stage: test
-  only:
-  - testing
-  - staging
-  - production
-  script:
-  - files=$(git ls-files -om --exclude-standard '*.php')
-  - phpcs -p -s -v -n . --extensions=php --ignore=/vendor,/node_modules,/bower_components,/inc/class-tgm-plugin-activation.php $files
+#codingstandards:
+#  stage: test
+#  only:
+#  - testing
+#  - staging
+#  - production
+#  script:
+#  - files=$(git ls-files -om --exclude-standard '*.php')
+#  - phpcs -p -s -v -n . --extensions=php --ignore=/vendor,/node_modules,/bower_components,/inc/class-tgm-plugin-activation.php $files
 
 #jslint:
 #  script:
