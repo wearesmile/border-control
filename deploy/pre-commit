@@ -1,0 +1,51 @@
+#!/bin/sh
+git ls-files | while read f; do tail -n1 $f | read -r _ || echo >> $f; done
+
+PROJECT=`php -r "echo dirname(dirname(dirname(realpath('$0'))));"`
+STAGED_FILES_CMD=`git diff --cached --name-only --diff-filter=ACMR HEAD | grep \\\\.php`
+ 
+# Determine if a file list is passed
+if [ "$#" -eq 1 ]
+then
+	oIFS=$IFS
+	IFS='
+	'
+	SFILES="$1"
+	IFS=$oIFS
+fi
+SFILES=${SFILES:-$STAGED_FILES_CMD}
+ 
+echo "Checking PHP Lint..."
+for FILE in $SFILES
+do
+	php -l -d display_errors=0 $PROJECT/$FILE
+	if [ $? != 0 ]
+	then
+		echo "Fix the error before commit."
+		exit 1
+	fi
+	FILES="$FILES $PROJECT/$FILE"
+done
+ 
+if [ "$FILES" != "" ]
+then
+	echo "Running Code Sniffer..."
+	$PROJECT/vendor/squizlabs/php_codesniffer/bin/phpcs --config-set installed_paths $PROJECT/vendor/wp-coding-standards/wpcs
+	$PROJECT/vendor/squizlabs/php_codesniffer/bin/phpcs --encoding=utf-8 --extensions=php --ignore=/vendor,/node_modules -n -p $FILES
+
+	if [ $? != 0 ]
+	then
+		echo "Coding standards errors have been detected. Running phpcbf..."
+		$PROJECT/vendor/squizlabs/php_codesniffer/bin/phpcbf --standard=$PROJECT/phpcs.xml.dist --encoding=utf-8 --extensions=php --ignore=/vendor,/node_modules -n -p $FILES
+		git add $FILES
+		echo "Running Code Sniffer again..."
+		$PROJECT/vendor/squizlabs/php_codesniffer/bin/phpcs --standard=$PROJECT/phpcs.xml.dist --encoding=utf-8 --extensions=php --ignore=/vendor,/node_modules -n -p $FILES
+		if [ $? != 0 ]
+		then
+			echo "Errors found not fixable automatically"
+			exit 1
+		fi
+	fi
+fi
+ 
+exit $?
