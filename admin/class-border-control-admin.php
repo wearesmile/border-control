@@ -495,13 +495,13 @@ class Border_Control_Admin {
 	public function sbc_reject_post_save( $data, $postarr ) {
 		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 
-		if ( empty( $post ) )
+		if ( empty( $postarr ) )
 			return $data;
 
 		if ( $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-			if ( ! empty( $postarr ) && isset( $postarr['post_ID'] ) ) :
+			if ( isset( $postarr['post_ID'] ) ) :
 				$post_id = $postarr['post_ID'];
 				$prev_post = get_post( $post_id );
 				$author_user = get_userdata( $prev_post->post_author );
@@ -510,8 +510,7 @@ class Border_Control_Admin {
 					delete_post_meta( $post_id, '_approve-list' ); // Reset approve list.
 					$data['post_status'] = 'sbc_improve'; // Change status to rejected.
 
-					$owners = get_post_meta( $post->ID, 'owners_owner', false );
-
+					$owners = get_post_meta( $post_id, 'owners_owner', false );
 					$owners_author = array_merge( $owners, array( $author_user->ID ) );
 
 					foreach ( $owners_author as $owner_author_id ) :
@@ -537,7 +536,7 @@ class Border_Control_Admin {
 
 				elseif ( isset( $postarr['publish'] ) ) :
 					if ( 'pending' === $postarr['original_post_status'] ) :
-						$owners = get_post_meta( $post->ID, 'owners_owner', false );
+						$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 						$approved_owners = get_post_meta( $post_id, '_approve-list' );
 
@@ -615,7 +614,8 @@ class Border_Control_Admin {
 				endif;
 			endif;
 			if ( $pending_review_email ) :
-				$owners = get_post_meta( $post->ID, 'owners_owner', false );
+				$post_id = $postarr['post_ID'];
+				$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 				foreach ( $owners as $owner_id ) :
 
@@ -635,7 +635,7 @@ class Border_Control_Admin {
 				$data['post_status'] = 'pending';
 			endif;
 
-			$owners = get_post_meta( $post->ID, 'owners_owner', false );
+			$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 			if ( is_array( $owners ) && ! in_array( (string) $user->ID, $owners, true ) ) :
 

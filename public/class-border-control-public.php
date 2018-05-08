@@ -51,7 +51,7 @@ class Border_Control_Public {
 		global $sbc_disable;
 		
 		$sbc_disable = false;
-		if ( is_preview() || ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
+		if ( ! is_admin() && ( is_preview() || ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) ) :
 			$sbc_disable = true;
 		endif;
 
