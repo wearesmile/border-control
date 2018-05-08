@@ -498,7 +498,7 @@ class Border_Control_Admin {
 		if ( empty( $postarr ) )
 			return $data;
 
-		if ( $this->sbc_can_user_moderate() ) :
+		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 			if ( isset( $postarr['post_ID'] ) ) :
@@ -540,67 +540,69 @@ class Border_Control_Admin {
 
 						$approved_owners = get_post_meta( $post_id, '_approve-list' );
 
-						if ( ! empty( $owners ) && in_array( (string) $user->ID, $owners, true ) ) :
+						if ( ! empty( $owners ) ) :
+							if ( in_array( (string) $user->ID, $owners, true ) ) :
 
-							if ( ! in_array( (string) $user->ID, $approved_owners, true ) && in_array( (string) $user->ID, $owners, true ) ) :
-								add_post_meta( $post_id, '_approve-list', $user->ID ); // Add current user to aproove list is is not alread and is an owner.
-
-							endif;
-
-							$approved_owners = get_post_meta( $post_id, '_approve-list' );
-
-							$remaining_approve_owners = array_diff( $owners, $approved_owners ); // Check if all owners have approved.
-
-							if ( empty( $remaining_approve_owners ) ) :
-								delete_post_meta( $post_id, '_approve-list' );
-								// Email the author that x has approved and published the post.
-								$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
-								$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
-								$message .= "All of the owners have now approved this post it is now published, you can view it here:\r\n" . get_permalink( $post_id ). "\r\n\r\n";
-								$message .= "Regards, \r\n";
-								$message .= $blogname . "\r\n";
-								$message .= get_home_url();
-
-								wp_mail( $author_user->user_email, '[' . $blogname . '] Post published (' . $prev_post->post_title . ')', $message );
-							else :
-								$data['post_status'] = 'pending'; // Change status to pending review.
-								// Email the author that x/y/z has approved the post, and a/b/c are still outstanding.
-								$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
-								$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n" . get_edit_post_link( $prev_post->ID ) . "\r\n\r\n";
-
-								$message .= "The following owners have not yet approved your post:\r\n";
-								$remaining_approve_owners_names = array();
-								foreach ( $remaining_approve_owners as $remaining_owner_id ) :
-									$remaining_owner_user = get_userdata( $remaining_owner_id );
-
-									$remaining_approve_owners_names[] = $remaining_owner_user->display_name;
-								endforeach;
-								$message .= implode( ', ', $remaining_approve_owners_names ) . "\r\n\r\n";
-
-								$approved_owners = get_post_meta( $prev_post->ID, '_approve-list' );
-
-								if ( ! empty( $approved_owners ) ) :
-
-									$message .= "The following owners have now approved your post:\r\n";
-									$approved_owners_names = array();
-									foreach ( $approved_owners as $approved_owner_id ) :
-										$approved_owner_user = get_userdata( $approved_owner_id );
-
-										$approved_owners_names[] = $approved_owner_user->display_name;
-									endforeach;
-									$message .= implode( ', ', $approved_owners_names ) . "\r\n\r\n";
+								if ( ! in_array( (string) $user->ID, $approved_owners, true ) && in_array( (string) $user->ID, $owners, true ) ) :
+									add_post_meta( $post_id, '_approve-list', $user->ID ); // Add current user to aproove list is is not alread and is an owner.
 
 								endif;
 
-								$message .= "Regards, \r\n";
-								$message .= $blogname . "\r\n";
-								$message .= get_home_url();
+								$approved_owners = get_post_meta( $post_id, '_approve-list' );
 
-								wp_mail( $author_user->user_email, '[' . $blogname . '] Post approved (' . $prev_post->post_title . ')', $message );
+								$remaining_approve_owners = array_diff( $owners, $approved_owners ); // Check if all owners have approved.
+
+								if ( empty( $remaining_approve_owners ) ) :
+									delete_post_meta( $post_id, '_approve-list' );
+									// Email the author that x has approved and published the post.
+									$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
+									$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
+									$message .= "All of the owners have now approved this post it is now published, you can view it here:\r\n" . get_permalink( $post_id ). "\r\n\r\n";
+									$message .= "Regards, \r\n";
+									$message .= $blogname . "\r\n";
+									$message .= get_home_url();
+
+									wp_mail( $author_user->user_email, '[' . $blogname . '] Post published (' . $prev_post->post_title . ')', $message );
+								else :
+									$data['post_status'] = 'pending'; // Change status to pending review.
+									// Email the author that x/y/z has approved the post, and a/b/c are still outstanding.
+									$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
+									$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n" . get_edit_post_link( $prev_post->ID ) . "\r\n\r\n";
+
+									$message .= "The following owners have not yet approved your post:\r\n";
+									$remaining_approve_owners_names = array();
+									foreach ( $remaining_approve_owners as $remaining_owner_id ) :
+										$remaining_owner_user = get_userdata( $remaining_owner_id );
+
+										$remaining_approve_owners_names[] = $remaining_owner_user->display_name;
+									endforeach;
+									$message .= implode( ', ', $remaining_approve_owners_names ) . "\r\n\r\n";
+
+									$approved_owners = get_post_meta( $prev_post->ID, '_approve-list' );
+
+									if ( ! empty( $approved_owners ) ) :
+
+										$message .= "The following owners have now approved your post:\r\n";
+										$approved_owners_names = array();
+										foreach ( $approved_owners as $approved_owner_id ) :
+											$approved_owner_user = get_userdata( $approved_owner_id );
+
+											$approved_owners_names[] = $approved_owner_user->display_name;
+										endforeach;
+										$message .= implode( ', ', $approved_owners_names ) . "\r\n\r\n";
+
+									endif;
+
+									$message .= "Regards, \r\n";
+									$message .= $blogname . "\r\n";
+									$message .= get_home_url();
+
+									wp_mail( $author_user->user_email, '[' . $blogname . '] Post approved (' . $prev_post->post_title . ')', $message );
+								endif;
+							else :
+								$data['post_author'] = $user->ID;
+								$data['post_status'] = 'sbc_pending'; // Change status to pending review.
 							endif;
-						else :
-							$data['post_author'] = $user->ID;
-							$data['post_status'] = 'pending'; // Change status to pending review.
 						endif;
 					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
 						$pending_review_email = true;
