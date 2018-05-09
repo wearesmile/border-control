@@ -155,7 +155,7 @@ class Border_Control {
 		$plugin_admin = new Border_Control_Admin( $this->get_plugin_name(), $this->get_version() );
 
 //		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' ); // Include Styles.
-//		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' ); // Include Scripts.
+		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' ); // Include Scripts.
 
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' ); // Create BC settings menu item.
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' ); // Setup the BC settings screen.
