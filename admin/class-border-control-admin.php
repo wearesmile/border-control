@@ -564,7 +564,7 @@ class Border_Control_Admin {
 
 									wp_mail( $author_user->user_email, '[' . $blogname . '] Post published (' . $prev_post->post_title . ')', $message );
 								else :
-									$data['post_status'] = 'pending'; // Change status to pending review.
+									$data['post_status'] = 'sbc_pending'; // Change status to pending review.
 									// Email the author that x/y/z has approved the post, and a/b/c are still outstanding.
 									$message = 'Hi ' . $author_user->display_name . ",\r\n\r\n";
 									$message .= 'This notice is to confirm that ' . $user->display_name . ' has approved "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n" . get_edit_post_link( $prev_post->ID ) . "\r\n\r\n";
@@ -618,23 +618,27 @@ class Border_Control_Admin {
 			if ( $pending_review_email ) :
 				$post_id = $postarr['post_ID'];
 				$owners = get_post_meta( $post_id, 'owners_owner', false );
+		
+				if ( ! empty( $owners ) ) : 
 
-				foreach ( $owners as $owner_id ) :
+					foreach ( $owners as $owner_id ) :
 
-					$owner = get_userdata( $owner_id );
+						$owner = get_userdata( $owner_id );
 
-					$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
-					$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
-					$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
-					$message .= "Regards, \r\n";
-					$message .= $blogname . "\r\n";
-					$message .= get_home_url();
+						$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
+						$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
+						$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
+						$message .= "Regards, \r\n";
+						$message .= $blogname . "\r\n";
+						$message .= get_home_url();
 
-					wp_mail( $author_user->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
+						wp_mail( $author_user->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
 
-				endforeach;
-				$data['post_author'] = $user->ID;
-				$data['post_status'] = 'pending';
+					endforeach;
+					$data['post_author'] = $user->ID;
+
+					$data['post_status'] = 'sbc_pending';
+				endif;
 			endif;
 
 			$owners = get_post_meta( $post_id, 'owners_owner', false );
@@ -669,7 +673,6 @@ class Border_Control_Admin {
 			endif;
 
 		endif;
-
 		return $data;
 	}
 
