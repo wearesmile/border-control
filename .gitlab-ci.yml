@@ -46,11 +46,9 @@ testing:
   only:
     - testing
   script:
-    - find . -type f -not -path "*node_modules*" -exec chmod -R 644 {} \;
-    - find . -type d -not -path "*node_modules*" -exec chmod -R 755 {} \;
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/testing/public_html/wp-content/plugins/border-control
+    - DIRECTORY=/srv/testing/public_html/wp-content/plugins/$CI_PROJECT_PATH_SLUG
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$STAGING_IP uptime
@@ -64,11 +62,9 @@ production:
   only:
     - staging
   script:
-    - find . -type f -not -path "*node_modules*" -exec chmod -R 644 {} \;
-    - find . -type d -not -path "*node_modules*" -exec chmod -R 755 {} \;
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/staging/public_html/wp-content/plugins/border-control
+    - DIRECTORY=/srv/staging/public_html/wp-content/plugins/$CI_PROJECT_PATH_SLUG
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$STAGING_IP uptime
@@ -82,11 +78,9 @@ production:
   only:
     - production
   script:
-    - find . -type f -not -path "*node_modules*" -exec chmod -R 644 {} \;
-    - find . -type d -not -path "*node_modules*" -exec chmod -R 755 {} \;
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/border-control
+    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/$CI_PROJECT_PATH_SLUG
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$PRODUCTION_IP uptime
