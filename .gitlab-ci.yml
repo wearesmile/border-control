@@ -48,7 +48,7 @@ testing:
   script:
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/testing/public_html/wp-content/plugins/$CI_PROJECT_PATH_SLUG
+    - DIRECTORY=/srv/testing/public_html/wp-content/plugins/border-control
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$STAGING_IP uptime
@@ -64,7 +64,7 @@ production:
   script:
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/staging/public_html/wp-content/plugins/$CI_PROJECT_PATH_SLUG
+    - DIRECTORY=/srv/staging/public_html/wp-content/plugins/border-control
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$STAGING_IP uptime
@@ -80,7 +80,7 @@ production:
   script:
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/$CI_PROJECT_PATH_SLUG
+    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/border-control
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$PRODUCTION_IP uptime
