@@ -114,9 +114,13 @@ class Border_Control_Public {
 		endif;
 		return $post_object;
 	}
-	public function sbc_set_the_posts( array $posts, WP_Query $wp_query ) {
+	
+	/**
+	 * Set the post to a revision
+	 */
+	public function sbc_set_the_posts( $posts, $wp_query ) {
 		global $sbc_disable;
-		if ( ! isset( $sbc_disable ) || ( isset( $sbc_disable ) && true !== $sbc_disable ) ) :
+		if ( ! isset( $sbc_disable ) || ( isset( $sbc_disable ) && true !== $sbc_disable ) || ! is_array( $posts ) ) :
 			$sbc_disable = false;
 		endif;
 		if ( ! is_admin() && true !== $sbc_disable ) :
