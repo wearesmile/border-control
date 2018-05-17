@@ -55,7 +55,7 @@ testing:
     - if ssh -p22 smile@$STAGING_IP [ ! -d "$DIRECTORY" ]; then ssh -p22 smile@$STAGING_IP "mkdir $DIRECTORY"; fi
     - rsync -ravp --exclude-from=$CI_PROJECT_DIR/deploy/exclude-list.txt --delete-excluded $CI_PROJECT_DIR/ smile@$STAGING_IP:$DIRECTORY
 
-production:
+staging:
   stage: deploy
   environment:
     name: Staging
