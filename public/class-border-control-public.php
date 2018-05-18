@@ -123,7 +123,7 @@ class Border_Control_Public {
 		if ( ! isset( $sbc_disable ) || ( isset( $sbc_disable ) && true !== $sbc_disable ) || ! is_array( $posts ) ) :
 			$sbc_disable = false;
 		endif;
-		if ( ! is_admin() && true !== $sbc_disable ) :
+		if ( ! is_admin() && ! wp_doing_ajax() && true !== $sbc_disable ) :
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 			foreach ( $posts as $key => $post_object ) :
