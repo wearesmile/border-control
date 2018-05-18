@@ -1398,7 +1398,6 @@ class Border_Control_Admin {
 		endforeach;
 	}
 
-
 	public function sbc_save_post_revision_meta( $post_id, $data ) {
 
 		// Get the latest revision.
@@ -1437,6 +1436,12 @@ class Border_Control_Admin {
 	public function remove_quick_edit( $actions ) {
 		unset($actions['inline hide-if-no-js']);
 		return $actions;
+	}
+	
+	
+
+	public function sbc_revisions_to_keep( $num, $post ) {
+		return -1;
 	}
 
 }
