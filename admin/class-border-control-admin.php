@@ -97,7 +97,7 @@ class Border_Control_Admin {
 		 * class.
 		 */
 
-		wp_enqueue_script('select2', 'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.4/js/select2.min.js', array( 'jquery' ), '4.0.4', false );
+		wp_enqueue_script('select2', 'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.4/js/select2.full.min.js', array( 'jquery' ), '4.0.4', false );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/border-control-admin.js', array( 'jquery' ), $this->version, false );
 
 	}
