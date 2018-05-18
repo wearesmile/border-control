@@ -70,7 +70,7 @@ class Border_Control {
 		if ( defined( 'PLUGIN_NAME_VERSION' ) ) {
 			$this->version = PLUGIN_NAME_VERSION;
 		} else {
-			$this->version = '1.0.0';
+			$this->version = '1.0.1';
 		}
 		$this->plugin_name = 'border-control';
 
@@ -192,6 +192,8 @@ class Border_Control {
 		
 		$this->loader->add_filter( 'get_sample_permalink_html', $plugin_admin, 'sbc_hide_slug_box', 10, 5 );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_remove_post_fields' );
+		
+		$this->loader->add_filter( 'wp_revisions_to_keep', $plugin_admin, 'sbc_revisions_to_keep', 10, 2 ); // Keep infinite revisions
 
 	}
 

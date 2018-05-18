@@ -1437,8 +1437,6 @@ class Border_Control_Admin {
 		unset($actions['inline hide-if-no-js']);
 		return $actions;
 	}
-	
-	
 
 	public function sbc_revisions_to_keep( $num, $post ) {
 		return -1;
