@@ -498,8 +498,6 @@ class Border_Control_Admin {
 		if ( empty( $postarr ) )
 			return $data;
 
-        $post_id = '';
-
 		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -643,7 +641,13 @@ class Border_Control_Admin {
 				endif;
 			endif;
 
-			$owners = get_post_meta( $post_id, 'owners_owner', false );
+            $owners = false;
+
+            if ( isset( $post_id ) ) :
+
+                $owners = get_post_meta( $post_id, 'owners_owner', false );
+
+            endif;
 
 			if ( is_array( $owners ) && ! in_array( (string) $user->ID, $owners, true ) ) :
 
