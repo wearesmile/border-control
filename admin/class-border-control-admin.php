@@ -1343,7 +1343,12 @@ class Border_Control_Admin {
 				endif;
 			endif;
 			if ( 'sbc_pending' === $data['post_status'] && ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
-				$data['post_title'] = $postarr['post_title'];
+                if ( isset( $postarr['post_name'] ) :
+                    $data['post_name'] = $postarr['post_name'];
+                endif;
+                if ( isset( $postarr['post_title'] ) :
+                    $data['post_title'] = $postarr['post_title'];
+                endif;
 			endif;
 		endif;
 		return $data;
