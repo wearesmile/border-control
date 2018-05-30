@@ -641,7 +641,13 @@ class Border_Control_Admin {
 				endif;
 			endif;
 
-			$owners = get_post_meta( $post_id, 'owners_owner', false );
+            $owners = false;
+
+            if ( isset( $post_id ) ) :
+
+                $owners = get_post_meta( $post_id, 'owners_owner', false );
+
+            endif;
 
 			if ( is_array( $owners ) && ! in_array( (string) $user->ID, $owners, true ) ) :
 
@@ -1337,7 +1343,11 @@ class Border_Control_Admin {
 				endif;
 			endif;
 			if ( 'sbc_pending' === $data['post_status'] && ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
-				$data['post_name'] = $postarr['post_name'];
+                if ( isset( $postarr['post_name'] ) ) :
+                    $data['post_name'] = $postarr['post_name'];
+                elseif ( isset( $postarr['post_title'] ) ) :
+                    $data['post_title'] = $postarr['post_title'];
+                endif;
 			endif;
 		endif;
 		return $data;
