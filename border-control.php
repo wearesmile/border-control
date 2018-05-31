@@ -17,7 +17,7 @@
  * Plugin URI:        https://wearesmile.com
  * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
  * Version:           1.0.1
- * Author:            We Are SMILE Ltd
+ * Author:            We are SMILE Ltd
  * Author URI:        https://wearesmile.com
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt

@@ -71,7 +71,7 @@ staging:
     - if ssh -p22 smile@$STAGING_IP [ ! -d "$DIRECTORY" ]; then ssh -p22 smile@$STAGING_IP "mkdir $DIRECTORY"; fi
     - rsync -ravp --exclude-from=$CI_PROJECT_DIR/deploy/exclude-list.txt --delete-excluded $CI_PROJECT_DIR/ smile@$STAGING_IP:$DIRECTORY
 
-production:
+aws:
   stage: deploy
   environment:
     name: Production
@@ -80,10 +80,10 @@ production:
   script:
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/border-control
-    - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - DIRECTORY=/mnt/efs/wp-content/smile-plugins/$CI_PROJECT_PATH_SLUG
+    - echo "$AWS_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
-    - ssh -o StrictHostKeyChecking=no smile@$PRODUCTION_IP uptime
-    - if ssh -p22 smile@$PRODUCTION_IP [ ! -d "$DIRECTORY" ]; then ssh -p22 smile@$PRODUCTION_IP "mkdir $DIRECTORY"; fi
-    - rsync -ravp --exclude-from=$CI_PROJECT_DIR/deploy/exclude-list.txt --delete-excluded $CI_PROJECT_DIR/ smile@$PRODUCTION_IP:$DIRECTORY
-   
+    - ssh -o StrictHostKeyChecking=no $AWS_CONNECT uptime
+    - if ssh -p22 $AWS_CONNECT [ ! -d "$DIRECTORY" ]; then ssh -p22 $AWS_CONNECT "sudo -u webapp mkdir -p $DIRECTORY"; fi
+    - rsync -ravpu --chmod=Du=rwx,Dgo=rx,Fu=rw,Fog=r --checksum --rsync-path="sudo -u webapp rsync" --exclude-from=$CI_PROJECT_DIR/deploy/exclude-list.txt --delete-excluded $CI_PROJECT_DIR/ $AWS_CONNECT:$DIRECTORY
+    - ssh -p22 $AWS_CONNECT "cd $DIRECTORY && sudo bash setup.sh && sudo rm setup.sh"
