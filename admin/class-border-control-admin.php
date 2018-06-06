@@ -343,6 +343,7 @@ class Border_Control_Admin {
 	}
 
 	public function sbc_owners_save( $post_id, $post, $update ) {
+		if ( ! is_admin() ) return;
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
 		if ( ! isset( $_POST['owners_nonce'] ) || ! wp_verify_nonce( $_POST['owners_nonce'], '_owners_nonce' ) ) return;
 		if ( ! current_user_can( 'edit_post', $post_id ) ) return;
@@ -661,7 +662,7 @@ class Border_Control_Admin {
 					$message .= $blogname . "\r\n";
 					$message .= get_home_url();
 
-					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
+					wp_mail( $old_author->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
 
 					$new_author = get_userdata( $data['post_author'] );
 
@@ -672,7 +673,7 @@ class Border_Control_Admin {
 					$message .= $blogname . "\r\n";
 					$message .= get_home_url();
 
-					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
+					wp_mail( $new_author->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
 
 				endif;
 
@@ -1310,6 +1311,7 @@ class Border_Control_Admin {
 		return;
 	}
 	public function sbc_manage_caps() {
+		if ( ! is_admin() ) return;
 		$editor = get_role( 'editor' );
 
 		// A list of capabilities to remove from editors.
@@ -1331,7 +1333,8 @@ class Border_Control_Admin {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $data['post_type'], $post_types ) ) :
-			if ( ! $this->sbc_can_user_moderate() && empty( $postarr['ID'] ) ) :
+			$post_type_object = get_post_type_object( $data['post_type'] );
+			if ( ! $this->sbc_can_user_moderate() && empty( $postarr['ID'] ) && ! current_user_can( $post_type_object->cap->publish_posts ) ) :
 				$data['post_status'] = 'sbc_publish';
 			else :
 				if ( 'pending' === $data['post_status'] ) :

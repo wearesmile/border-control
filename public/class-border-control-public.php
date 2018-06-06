@@ -130,11 +130,13 @@ class Border_Control_Public {
 				if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
 					$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
 					if ( empty( $last_public ) ) :
-						$unpublished_post = array(
-							'ID'           => $post_object->ID,
-							'post_status' => 'sbc_publish',
-						);
-						wp_update_post( $unpublished_post ); // Hack the post status.
+						if ( !current_user_can( 'publish_posts', $post_object->ID ) ) {
+							$unpublished_post = array(
+								'ID'           => $post_object->ID,
+								'post_status' => 'sbc_publish',
+							);
+							wp_update_post( $unpublished_post ); 
+						} // Hack the post status.
 						if ( is_singular() && ! is_preview() ) :
 							$wp_query->set_404();
 							status_header( 404 );
