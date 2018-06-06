@@ -45,7 +45,7 @@ deploy:linode:
     - ssh -o StrictHostKeyChecking=no smile@$PRODUCTION_IP uptime
     - if ssh -p22 smile@$PRODUCTION_IP [ ! -d "$DIRECTORY" ]; then ssh -p22 smile@$PRODUCTION_IP "mkdir $DIRECTORY"; fi
     - rsync -ravp --exclude-from=$CI_PROJECT_DIR/deploy/exclude-list.txt --delete-excluded $CI_PROJECT_DIR/ smile@$PRODUCTION_IP:$DIRECTORY
-   
+  
 deploy:aws:
   stage: deploy
   environment:
@@ -53,6 +53,6 @@ deploy:aws:
   only:
     - production
   script:
-    - zip -X -r $CI_PROJECT_NAME.zip ./$CI_PROJECT_NAME/
+    - zip -X -r $CI_PROJECT_NAME.zip ./
     - aws s3 cp ./$CI_PROJECT_NAME.zip s3://$AWS_BUCKET
     - aws ssm send-command --document-name "AWS-RunShellScript" --targets '{"Key":"tag:elasticbeanstalk:environment-id","Values":["e-dtiq79tvyu"]}' --max-concurrency "50%" --parameters '{"commands":["bash /tmp/unzip_depoy.sh '$PROJECT_TYPE' '$CI_PROJECT_NAME'"],"executionTimeout":["3600"]}' --timeout-seconds 600 --region eu-west-1
