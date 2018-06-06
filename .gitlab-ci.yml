@@ -39,7 +39,7 @@ deploy:linode:
   script:
     - mkdir -p ~/.ssh
     - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/bartender
+    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/border-control
     - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - chmod 700 ~/.ssh
     - ssh -o StrictHostKeyChecking=no smile@$PRODUCTION_IP uptime
