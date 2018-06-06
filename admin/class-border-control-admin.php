@@ -662,7 +662,7 @@ class Border_Control_Admin {
 					$message .= $blogname . "\r\n";
 					$message .= get_home_url();
 
-					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
+					wp_mail( $old_author->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
 
 					$new_author = get_userdata( $data['post_author'] );
 
@@ -673,7 +673,7 @@ class Border_Control_Admin {
 					$message .= $blogname . "\r\n";
 					$message .= get_home_url();
 
-					wp_mail( $author_user->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
+					wp_mail( $new_author->user_email, '[' . $blogname . '] Post author changed (' . $prev_post->post_title . ')', $message );
 
 				endif;
 
