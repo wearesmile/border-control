@@ -160,7 +160,7 @@ class Border_Control {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' ); // Create BC settings menu item.
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' ); // Setup the BC settings screen.
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_owners_add_meta_box' ); // Add owners metabox to post edit screen.
-		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save' ); // Save owners to a post.
+		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save', 10, 3 ); // Save owners to a post.
 		$this->loader->add_action( 'transition_post_status', $plugin_admin, 'sbc_publish_revision', 9999, 3 ); // Add latest revision as meta value when post is published.
 		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
 
