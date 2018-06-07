@@ -1,6 +1,8 @@
 image: registry.gitlab.com/wearesmile/glass:latest
+
 variables:
   PROJECT_TYPE: "plugins"
+
 cache:
   paths:
   - vendor/
