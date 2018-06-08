@@ -1339,7 +1339,7 @@ class Border_Control_Admin {
 			else :
 				if ( 'pending' === $data['post_status'] ) :
 					$data['post_status'] = 'sbc_pending';
-				elseif ( ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
+				elseif ( ! current_user_can( 'publish_posts', $post_type_object->cap->publish_posts ) ) :
 					if ( 'publish' === $data['post_status'] ) :
 						$data['post_status'] = 'sbc_pending';
 					endif;
