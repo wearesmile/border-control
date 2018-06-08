@@ -57,4 +57,4 @@ deploy:aws:
   script:
     - zip -X -r $CI_PROJECT_NAME.zip ../$CI_PROJECT_NAME -x *.git*
     - aws s3 cp ./$CI_PROJECT_NAME.zip s3://$AWS_BUCKET
-    - aws ssm send-command --document-name "AWS-RunShellScript" --targets '{"Key":"tag:elasticbeanstalk:environment-id","Values":["e-dtiq79tvyu"]}' --max-concurrency "50%" --parameters '{"commands":["bash /tmp/unzip_depoy.sh '$PROJECT_TYPE' '$CI_PROJECT_NAME'"],"executionTimeout":["3600"]}' --timeout-seconds 600 --region eu-west-1
+    - aws ssm send-command --document-name "AWS-RunShellScript" --targets '{"Key":"tag:elasticbeanstalk:environment-id","Values":["e-dtiq79tvyu"]}' --max-concurrency "50%" --parameters '{"commands":["bash /tmp/unzip_and_move.sh '$PROJECT_TYPE' '$CI_PROJECT_NAME'"],"executionTimeout":["3600"]}' --timeout-seconds 600 --region eu-west-1
