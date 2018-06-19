@@ -51,7 +51,7 @@ class Border_Control_Public {
 		global $sbc_disable;
 		
 		$sbc_disable = false;
-		if ( ! is_admin() && ( is_preview() || ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) ) :
+		if ( ! is_admin() && ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
 			$sbc_disable = true;
 		endif;
 
@@ -137,7 +137,7 @@ class Border_Control_Public {
 							);
 							wp_update_post( $unpublished_post ); 
 						} // Hack the post status.
-						if ( is_singular() && ! is_preview() ) :
+						if ( is_singular() && ! ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
 							$wp_query->set_404();
 							status_header( 404 );
 							echo '<!-- BORDER CONTROLLED 404 -->';
