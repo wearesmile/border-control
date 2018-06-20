@@ -127,7 +127,7 @@ class Border_Control_Public {
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 			foreach ( $posts as $key => $post_object ) :
-				if ( 'publish' !== $post_object->post_status && in_array( $post_object->post_type, $post_types, true ) ) :
+				if ( ! in_array( $post_object->post_status, [ 'publish', 'sbc_publish' ] ) && in_array( $post_object->post_type, $post_types, true ) ) :
 					$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
 					if ( empty( $last_public ) ) :
 						if ( !current_user_can( 'publish_posts', $post_object->ID ) ) {
