@@ -608,7 +608,8 @@ class Border_Control_Admin {
 					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
 						$pending_review_email = true;
 					else :
-						$data['post_author'] = $user->ID;
+						if ( false === $this->sbc_can_user_moderate() )
+							$data['post_author'] = $user->ID;
 					endif;
 				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] ) :
 					if ( 'publish' === $postarr['original_post_status'] ) :
