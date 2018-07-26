@@ -39,7 +39,7 @@ deploy:testing:
   only:
     - testing
   script:
-    - zip -X -r $CI_PROJECT_NAME.zip ../$CI_PROJECT_NAME/ --exclude $(<./deploy/exclude.txt)
+    - zip -X -r $CI_PROJECT_NAME.zip ../$CI_PROJECT_NAME -x *.git*
     - aws s3 cp ./$CI_PROJECT_NAME.zip s3://$AWS_BUCKET-testing
     - aws ssm send-command --document-name "AWS-RunShellScript" --targets '{"Key":"tag:ec2:environment-name","Values":["testing"]}' --max-concurrency "100%" --parameters '{"commands":["bash /tmp/unzip_and_move.sh '$PROJECT_TYPE' '$CI_PROJECT_NAME'"],"executionTimeout":["3600"]}' --timeout-seconds 600 --region eu-west-2
   
