@@ -286,7 +286,7 @@ class Border_Control_Admin {
 		?>
 			<p><?php esc_html_e('Optionally limit this post to specific moderators from the site moderators.'); ?></p>
 			<label for="owners_owner" class="screen-reader-text"><?php _e( 'Owners', 'owners' ); ?></label>
-			<select name="owners_owner[]" id="owners_owner" class="select2" multiple="multiple">
+			<select name="owners_owner[]" id="owners_owner" class="select2" multiple="multiple" <?php if ( ( ! current_user_can( 'publish_posts' ) ) ) : echo 'required'; endif; ?>>
 				<?php foreach ( $possible_owners as $possible_owner ) : ?>
 					<option value="<?php esc_attr_e( $possible_owner->ID ); ?>"
 						<?php
