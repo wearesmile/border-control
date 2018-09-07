@@ -1294,7 +1294,7 @@ class Border_Control_Admin {
 
 		if ( $new_status === $old_status )
 			return;
-		if ( 'publish' !== $new_status )
+		if ( 'publish' === $new_status )
 			return;
 
 		$options = get_option( 'sbc_settings' );
