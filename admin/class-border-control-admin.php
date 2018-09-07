@@ -354,16 +354,29 @@ class Border_Control_Admin {
 
 		$meta_key = 'owners_owner';
 
-		if ( isset( $_POST['owners_owner'] ) ) :
-			if ( is_array( $_POST['owners_owner'] ) ) :
-				delete_post_meta( $post_id, $meta_key);
+
+		if ( isset( $_POST['owners_owner'] ) ) :// Check if moderators are set.
+
+			if ( is_array( $_POST['owners_owner'] ) ) :// Checks if it's an array (we're expecting array).
+
+				delete_post_meta( $post_id, $meta_key);// Resetting moderator(s).
+
 				foreach ( $_POST['owners_owner'] as $owner ) :
 					add_post_meta( $post_id, $meta_key, $owner );
 				endforeach;
-			else :
-				update_post_meta( $post_id, $meta_key, esc_attr( $_POST['owners_owner'] ) );
+
+			else :// In case it's not an array, do it anyway.
+
+				update_post_meta( $post_id, $meta_key, $_POST['owners_owner'] );
+
 			endif;
+
+        else :// Additional check if moderators aren't set. The only people who can save post without this being set are governance managers and web publishers.
+
+            delete_post_meta( $post_id, $meta_key);// Remove existing moderators.
+
 		endif;
+
 	}
 
 	private function sbc_can_user_moderate() {
