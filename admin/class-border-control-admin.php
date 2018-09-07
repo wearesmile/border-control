@@ -1307,8 +1307,10 @@ class Border_Control_Admin {
 
 		if ( $new_status === $old_status )
 			return;
-		if ( 'publish' !== $new_status )
+		if ( 'publish' === $new_status )
 			return;
+        if ( ( $old_status === 'draft' ) and ( $new_status === 'sbc_pending' ) )
+            return;
 
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
@@ -1317,9 +1319,10 @@ class Border_Control_Admin {
 			$revisions = wp_get_post_revisions( $post->ID, array(
 				'posts_per_page' => 1
 			));
-			foreach ( $revisions as $revision ) :
-				update_post_meta( $post->ID, '_latest_revision', $revision->ID );
-			endforeach;
+
+            foreach ( $revisions as $revision ) :
+                update_post_meta( $post->ID, '_latest_revision', $revision->ID );
+            endforeach;
 
 		endif;
 		return;
