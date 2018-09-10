@@ -160,12 +160,7 @@ class Border_Control_Admin {
 		<fieldset>
 			<legend class="screen-reader-text"><span>Controlled Post Types</span></legend>
 			<?php
-			$post_types = get_post_types(
-				array(
-					'public'	=> true,
-				),
-				'objects'
-			);
+			$post_types = get_post_types( [], 'objects' );
 			$name = 'sbc_post_type';
 			foreach ( $post_types as $post_type ) :
 			?>
