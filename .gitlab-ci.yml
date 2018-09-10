@@ -32,22 +32,6 @@ phplint:
   - cd $CI_PROJECT_DIR
   - find . -type d \( -path ./vendor -o -path ./plugins \) -prune -o \( -name '*.php' \) -exec php -lf {} \;
 
-deploy:linode:
-  stage: deploy
-  environment:
-    name: Production
-  only:
-    - production
-  script:
-    - mkdir -p ~/.ssh
-    - eval "$(ssh-agent)"
-    - DIRECTORY=/srv/wearesmile.com/public_html/wp-content/plugins/border-control
-    - echo "$STAGING_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
-    - chmod 700 ~/.ssh
-    - ssh -o StrictHostKeyChecking=no smile@$PRODUCTION_IP uptime
-    - if ssh -p22 smile@$PRODUCTION_IP [ ! -d "$DIRECTORY" ]; then ssh -p22 smile@$PRODUCTION_IP "mkdir $DIRECTORY"; fi
-    - rsync -ravp --exclude-from=$CI_PROJECT_DIR/deploy/exclude-list.txt --delete-excluded $CI_PROJECT_DIR/ smile@$PRODUCTION_IP:$DIRECTORY
-  
 deploy:aws:
   stage: deploy
   environment:
