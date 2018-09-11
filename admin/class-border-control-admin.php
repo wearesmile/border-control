@@ -495,6 +495,25 @@ class Border_Control_Admin {
 	}
 
 	/**
+	 * Change text on update button for non-moderator roles.
+	 *
+	 * @param string $translation the translated text.
+	 * @param string $text the original text.
+	 * @author Warren Reeves
+	 */
+	function sbc_change_update_button( $translation, $text ) {
+		global $post;
+
+		if ( $this->sbc_is_controlled_cpt() ) :
+			if ( 'Update' === $text && ! $this->sbc_can_user_moderate() && isset( $post ) ) :
+					return 'Submit for Review';
+			endif;
+		endif;
+
+		return $translation;
+	}
+
+	/**
 	 * Send emails and set post status before the post is added to the database.
 	 *
 	 * @param array $data The data passed via the $_POST parameter.
