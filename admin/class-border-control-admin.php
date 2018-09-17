@@ -1418,7 +1418,7 @@ class Border_Control_Admin {
 	}
 	
 	public function sbc_post_states( $post_states, $post ) {
-		$post_status = $_REQUEST['post_status'];
+		$post_status = $post->post_status;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $post->post_type, $post_types ) ) :
