@@ -564,7 +564,8 @@ class Border_Control_Admin {
 					endforeach;
 
 				elseif ( isset( $postarr['publish'] ) ) :
-					if ( 'pending' === $postarr['original_post_status'] ) :
+					// echo'<pre>';var_dump( $postarr );die;
+					if ( 'pending' === $postarr['original_post_status'] || 'sbc_pending' === $postarr['original_post_status'] ) :
 						$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 						$approved_owners = get_post_meta( $post_id, '_approve-list' );
