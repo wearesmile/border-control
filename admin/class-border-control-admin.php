@@ -308,7 +308,6 @@ class Border_Control_Admin {
 			$permissions[] = $post_type_object->cap->publish_posts;
 		endforeach;
 
-
 		$roles = $wp_roles->get_names();
 		foreach ( $roles as $role => $name ) :// Loop through all_roles.
 			if ( in_array( $role, $selected_roles, true ) ) :// If in roles.
@@ -317,7 +316,9 @@ class Border_Control_Admin {
 				endforeach;
 			else :// Else.
 				foreach ( $permissions as $permission ) :
-					$wp_roles->remove_cap( $role, $permission );// Remove capabilities from role.
+					if ( isset( $wp_roles->roles[$role]['capabilities'][$permission] ) ) {
+						$wp_roles->remove_cap( $role, $permission ); // Remove capabilities from role.
+					}
 				endforeach;
 			endif;
 		endforeach;
