@@ -527,7 +527,7 @@ class Border_Control_Admin {
 		if ( empty( $postarr ) )
 			return $data;
 
-		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
+		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 			if ( isset( $postarr['post_ID'] ) ) :
@@ -639,7 +639,7 @@ class Border_Control_Admin {
 						if ( false === $this->sbc_can_user_moderate() )
 							$data['post_author'] = $user->ID;
 					endif;
-				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] ) :
+				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] && !$this->sbc_can_user_moderate() ) :
 					if ( 'publish' === $postarr['original_post_status'] ) :
 						$pending_review_email = true;
 					endif;
@@ -647,14 +647,11 @@ class Border_Control_Admin {
 			endif;
 			if ( $pending_review_email ) :
 				$post_id = $postarr['post_ID'];
-				$owners = get_post_meta( $post_id, 'owners_owner', false );
-		
-				if ( ! empty( $owners ) ) : 
+				$owners = !empty( get_post_meta( $post_id, 'owners_owner', false ) ) ? get_post_meta( $post_id, 'owners_owner', false ) : $postarr['owners_owner'];
 
+				if ( ! empty( $owners ) ) :
 					foreach ( $owners as $owner_id ) :
-
 						$owner = get_userdata( $owner_id );
-
 						$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
 						$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
 						$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
@@ -662,7 +659,7 @@ class Border_Control_Admin {
 						$message .= $blogname . "\r\n";
 						$message .= get_home_url();
 
-						wp_mail( $author_user->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
+						wp_mail( $owner->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
 
 					endforeach;
 					$data['post_author'] = $user->ID;
