@@ -634,7 +634,9 @@ class Border_Control_Admin {
 							endif;
 						endif;
 					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
-						$pending_review_email = true;
+						if ( !$this->sbc_can_user_moderate() ) :
+							$pending_review_email = true;
+						endif;
 					else :
 						if ( false === $this->sbc_can_user_moderate() )
 							$data['post_author'] = $user->ID;
