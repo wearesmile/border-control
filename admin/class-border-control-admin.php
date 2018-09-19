@@ -508,7 +508,7 @@ class Border_Control_Admin {
 		global $post;
 
 		if ( $this->sbc_is_controlled_cpt() ) :
-			if ( 'Update' === $text && ! $this->sbc_can_user_moderate() && isset( $post ) && !current_user_can( 'publish_posts', $post ) ) :
+			if ( ( 'Update' === $text || 'Publish' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) && !current_user_can( 'publish_posts', $post ) ) :
 					return 'Submit for Review';
 			endif;
 		endif;
