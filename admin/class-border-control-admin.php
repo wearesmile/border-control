@@ -561,7 +561,7 @@ class Border_Control_Admin {
 						$message .= $blogname . "\r\n";
 						$message .= get_home_url();
 
-						wp_mail( $author_user->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
+						wp_mail( $owner_author->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
 
 					endforeach;
 
