@@ -527,6 +527,8 @@ class Border_Control_Admin {
 		if ( empty( $postarr ) )
 			return $data;
 
+			// echo '<pre>';var_dump($postarr);die;
+
 		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
@@ -563,9 +565,9 @@ class Border_Control_Admin {
 
 					endforeach;
 
-				elseif ( isset( $postarr['publish'] ) ) :
+				elseif ( isset( $postarr['publish'] ) || 'publish' === $postarr['post_status'] ) :
 					// echo'<pre>';var_dump( $postarr );die;
-					if ( 'pending' === $postarr['original_post_status'] || 'sbc_pending' === $postarr['original_post_status'] ) :
+					if ( 'pending' === $postarr['original_post_status'] || 'sbc_pending' === $postarr['original_post_status'] && $this->sbc_can_user_moderate() ) :
 						$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 						$approved_owners = get_post_meta( $post_id, '_approve-list' );
@@ -638,13 +640,13 @@ class Border_Control_Admin {
 						if ( !$this->sbc_can_user_moderate() ) :
 							$pending_review_email = true;
 						endif;
+					elseif ( isset( $postarr['save'] ) && 'Submit for Review' === $postarr['save'] && !$this->sbc_can_user_moderate() ) :
+						if ( 'publish' === $postarr['original_post_status'] ) :
+							$pending_review_email = true;
+						endif;
 					else :
 						if ( false === $this->sbc_can_user_moderate() )
 							$data['post_author'] = $user->ID;
-					endif;
-				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] && !$this->sbc_can_user_moderate() ) :
-					if ( 'publish' === $postarr['original_post_status'] ) :
-						$pending_review_email = true;
 					endif;
 				endif;
 			endif;
