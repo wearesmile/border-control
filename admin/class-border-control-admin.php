@@ -327,7 +327,9 @@ class Border_Control_Admin {
 		foreach ( $users as $user ) :// Loop through all_users.
 			if ( ! in_array( (string) $user->ID, $selected_users, true ) && empty( array_intersect( $user->roles, $selected_roles ) ) ) :// If user role is not in roles and user is not in users.
 				foreach ( $permissions as $permission ) :
-					$user->remove_cap( $permission );// Remove capabilities from user.
+					if ( isset( $user->allcaps[$permission] ) ) :
+						$user->remove_cap( $permission );// Remove capabilities from user.
+					endif;
 				endforeach;
 			else :// Else.
 				foreach ( $permissions as $permission ) :
