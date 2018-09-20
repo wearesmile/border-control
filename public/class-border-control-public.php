@@ -82,7 +82,7 @@ class Border_Control_Public {
 				if ( empty( $last_public ) ) :
 					$wp_query->set_404();
 					status_header( 404 );
-					echo '<!-- BORDER CONTROLLED 404 -->';
+					echo '<!--1 BORDER CONTROLLED 404 -->';
 					include( get_query_template( '404' ) );
 					exit;
 				else :
@@ -130,17 +130,10 @@ class Border_Control_Public {
 				if ( ! in_array( $post_object->post_status, [ 'publish', 'sbc_publish' ] ) && in_array( $post_object->post_type, $post_types, true ) ) :
 					$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
 					if ( empty( $last_public ) ) :
-						if ( !current_user_can( 'publish_posts', $post_object->ID ) ) {
-							$unpublished_post = array(
-								'ID'           => $post_object->ID,
-								'post_status' => 'sbc_publish',
-							);
-							wp_update_post( $unpublished_post ); 
-						} // Hack the post status.
 						if ( is_singular() && ! ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
 							$wp_query->set_404();
 							status_header( 404 );
-							echo '<!-- BORDER CONTROLLED 404 -->';
+							echo '<!-- 2BORDER CONTROLLED 404 -->';
 							include( get_query_template( '404' ) );
 							exit;
 						else :
@@ -188,7 +181,7 @@ class Border_Control_Public {
 				if ( empty( $last_public ) ) :
 					$wp_query->set_404();
 					status_header( 404 );
-					echo '<!-- BORDER CONTROLLED 404 -->';
+					echo '<!-- 3BORDER CONTROLLED 404 -->';
 					include( get_query_template( '404' ) );
 					exit;
 				else :
