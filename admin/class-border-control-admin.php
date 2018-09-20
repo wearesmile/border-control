@@ -1305,6 +1305,7 @@ class Border_Control_Admin {
 			'show_in_admin_status_list' => true,
 			'label_count'               => _n_noop( 'Needs Improvement <span class="count">(%s)</span>', 'Need Improvement <span class="count">(%s)</span>' ),
 		) );
+
 		register_post_status( 'sbc_publish', array(
 			'label'                     => _x( 'Pending Publish', 'sbc' ),
 			'public'                    => false,
@@ -1323,10 +1324,12 @@ class Border_Control_Admin {
 
 		if ( $new_status === $old_status )
 			return;
-		if ( 'publish' === $new_status )
+		if ( 'publish' === $new_status || 'sbc_improve' === $new_status )
 			return;
         if ( ( $old_status === 'draft' ) and ( $new_status === 'sbc_pending' ) )
-            return;
+			return;
+		if ( 'sbc_improve' === $old_status && 'sbc_pending' === $new_status )
+			return;
 
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
