@@ -525,11 +525,12 @@ class Border_Control_Admin {
 	 */
 	function sbc_change_publish_button_simple( $translated_text, $text, $domain ) {
 
-
 		if ( isset( $_GET['post'] ) && is_admin() && ( 'Update' === $text || 'Publish' === $text ) ) :
 			if ( $this->sbc_is_controlled_cpt() ) :
-				if ( !current_user_can( 'publish_posts', $_GET['post'] ) ) :
-					return 'Submit for Review';
+				if ( post_type_exists( get_post_type( $_GET['post'] ) ) ) :
+					if ( !current_user_can( 'publish_post', $_GET['post'] ) ) :
+						return 'Submit for Review';
+					endif;
 				endif;
 			endif;
 		endif;
@@ -657,7 +658,7 @@ class Border_Control_Admin {
 							endif;
 						endif;
 					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
-						if ( !$this->sbc_can_user_moderate() ) :
+						if ( ! $this->sbc_can_user_moderate() && ! current_user_can( 'publish_post', $post_id ) ) :
 							$pending_review_email = true;
 						endif;
 					elseif ( isset( $postarr['save'] ) && 'Submit for Review' === $postarr['save'] && !$this->sbc_can_user_moderate() ) :
@@ -688,7 +689,6 @@ class Border_Control_Admin {
 
 					endforeach;
 					$data['post_author'] = $user->ID;
-
 					$data['post_status'] = 'sbc_pending';
 				endif;
 			endif;
@@ -1396,7 +1396,7 @@ class Border_Control_Admin {
 			else :
 				if ( 'pending' === $data['post_status'] ) :
 					$data['post_status'] = 'sbc_pending';
-				elseif ( ! current_user_can( 'publish_posts', $post_type_object->cap->publish_posts ) ) :
+				elseif ( ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
 					if ( 'publish' === $data['post_status'] ) :
 						$data['post_status'] = 'sbc_pending';
 					endif;
