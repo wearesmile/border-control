@@ -507,13 +507,34 @@ class Border_Control_Admin {
 	function sbc_change_update_button( $translation, $text, $context, $domain ) {
 		global $post;
 
-		if ( $this->sbc_is_controlled_cpt() ) :
-			if ( ( 'Update' === $text || 'Publish' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) && !current_user_can( 'publish_posts', $post ) ) :
+		if ( ( 'Update' === $text || 'Publish' === $text ) && is_admin() && isset( $post ) ) :
+			if ( $this->sbc_is_controlled_cpt() && ! $this->sbc_can_user_moderate() && !current_user_can( 'publish_posts', $post ) ) :
 					return 'Submit for Review';
 			endif;
 		endif;
 
 		return $translation;
+	}
+
+	/**
+	 * Change submit button text here as well.
+	 *
+	 * @param string $translation the translated text.
+	 * @param string $text the original text.
+	 * @author Warren Reeves
+	 */
+	function sbc_change_publish_button_simple( $translated_text, $text, $domain ) {
+
+
+		if ( isset( $_GET['post'] ) && is_admin() && ( 'Update' === $text || 'Publish' === $text ) ) :
+			if ( $this->sbc_is_controlled_cpt() ) :
+				if ( !current_user_can( 'publish_posts', $_GET['post'] ) ) :
+					return 'Submit for Review';
+				endif;
+			endif;
+		endif;
+
+		return $translated_text;
 	}
 
 	/**
