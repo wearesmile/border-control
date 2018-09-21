@@ -517,6 +517,27 @@ class Border_Control_Admin {
 	}
 
 	/**
+	 * Change submit button text here as well.
+	 *
+	 * @param string $translation the translated text.
+	 * @param string $text the original text.
+	 * @author Warren Reeves
+	 */
+	function sbc_change_publish_button_simple( $translated_text, $text, $domain ) {
+
+		if ( $this->sbc_is_controlled_cpt() ) :
+			if ( ( 'Update' === $text || 'Publish' === $text ) ) :
+				$post = get_post( $_GET['post'] );
+				if ( !current_user_can( 'publish_posts', $post ) ) :
+					return 'Submit for Review';
+				endif;
+			endif;
+		endif;
+
+		return $translated_text;
+	}
+
+	/**
 	 * Send emails and set post status before the post is added to the database.
 	 *
 	 * @param array $data The data passed via the $_POST parameter.
