@@ -507,7 +507,7 @@ class Border_Control_Admin {
 	function sbc_change_update_button( $translation, $text, $context, $domain ) {
 		global $post;
 
-		if ( $this->sbc_is_controlled_cpt() ) :
+		if ( $this->sbc_is_controlled_cpt() && is_admin() ) :
 			if ( ( 'Update' === $text || 'Publish' === $text ) && ! $this->sbc_can_user_moderate() && isset( $post ) && !current_user_can( 'publish_posts', $post ) ) :
 					return 'Submit for Review';
 			endif;
@@ -525,10 +525,9 @@ class Border_Control_Admin {
 	 */
 	function sbc_change_publish_button_simple( $translated_text, $text, $domain ) {
 
-		if ( $this->sbc_is_controlled_cpt() ) :
-			if ( ( 'Update' === $text || 'Publish' === $text ) ) :
-				$post = get_post( $_GET['post'] );
-				if ( !current_user_can( 'publish_posts', $post ) ) :
+		if ( $this->sbc_is_controlled_cpt() && is_admin() ) :
+			if ( ( 'Update' === $text || 'Publish' === $text ) && isset( $_GET['post'] ) ) :
+				if ( !current_user_can( 'publish_posts', $_GET['post'] ) ) :
 					return 'Submit for Review';
 				endif;
 			endif;
