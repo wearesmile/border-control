@@ -24,26 +24,12 @@ This plugin enables a site to limit publishing of any post type to either a spec
 
 ###### Something is broken
 
-Post an issue on this repo with as much information as possible, it should be fixed.
+Post an issue on this repo with as much information as possible, it should be fixed after triaging. If you are able to fix it then do so and open a MR into `testing` branch.
 
 ###### Something is not working
 
 Post an issue on this repo with as much information as possible. We can discuss if its inthe pipeline or if it is even suitable functionality for this plugin. This is designed to be as simple as possible for creating a moderation workflow on Wordpress installations.
 
-## Screenshots
+## Using Border Control
 
-1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Note that the screenshot is taken from
-the /assets directory or the directory that contains the stable readme.txt (tags or trunk). Screenshots in the /assets
-directory take precedence. For example, `/assets/screenshot-1.png` would win over `/tags/4.3/screenshot-1.png`
-(or jpg, jpeg, gif).
-2. This is the second screen shot
-
-## Changelog
-
-= 1.0 =
-* Inital repo
-
-## Upgrade Notice
-
-= 1.0 =
-No upgrate notes.
+This plugin gives website moderaters the ability to limit post types to not have posts published until they have approved it.
