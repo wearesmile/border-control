@@ -533,7 +533,6 @@ class Border_Control_Admin {
 			return $data;
 
 		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
-		echo 'is controllled';
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 			if ( isset( $postarr['post_ID'] ) ) :
@@ -713,8 +712,6 @@ class Border_Control_Admin {
 			endif;
 
 		endif;
-		var_dump($data);
-		die;
 		return $data;
 	}
 
@@ -915,7 +912,7 @@ class Border_Control_Admin {
 			else :
 				if ( 'pending' === $data['post_status'] ) :
 					$data['post_status'] = 'sbc_pending';
-				elseif ( ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
+				elseif ( ! empty( $postarr['ID'] ) && ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
 					if ( 'publish' === $data['post_status'] ) :
 						$data['post_status'] = 'sbc_pending';
 					endif;
