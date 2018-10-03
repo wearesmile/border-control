@@ -165,31 +165,18 @@ class Border_Control {
 		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
 
 		$this->loader->add_filter( 'gettext', $plugin_admin, 'sbc_change_publish_button_simple', 10, 3 );
-		// $this->loader->add_filter( 'gettext_with_context', $plugin_admin, 'sbc_change_update_button', 10, 4 );
-		$this->loader->add_action( 'wp_insert_post_data', $plugin_admin, 'sbc_reject_post_save', 99, 2 ); // Email notify, and change post status.
-//		$this->loader->add_action( 'post_submitbox_misc_actions', $plugin_admin, 'sbc_display_post_status', 10, 1 );
 
-//		$this->loader->add_action( 'load-post.php', $plugin_admin, 'sbc_create_draft' );
-//		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_hide_pending', 1 );
-//		$this->loader->add_action( 'admin_notices', $plugin_admin, 'sbc_governence_noticies' );
-//		$this->loader->add_action( 'wp_dashboard_setup', $plugin_admin, 'sbc_awaiting_review_approval_widgets' );
-//		$this->loader->add_action( 'wp_insert_post', $plugin_admin, 'sbc_after_governance_update', 99, 3 );
-//
-//		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'sbc_override_edited_post', 99 );
-//
-//		//filter the post data
-//		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_filter_post_data', 99, 2 );
+		$this->loader->add_action( 'wp_insert_post_data', $plugin_admin, 'sbc_reject_post_save', 99, 2 ); // Email notify, and change post status.
+
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_register_pending' ); // Add `sbc_` prefixed post statuses.
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_manage_caps', 9999 ); // Force BC capailities to affected posts and roles.
 		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 9999, 2 ); // Force `sbc_` post statuses.
 
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_force_revisions' ); // Enable revisions on selected post types.
-//		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_override_pending_post_status' );
 
 		$this->loader->add_action( 'pre_post_update', $plugin_admin, 'sbc_save_post_revision_meta', 1, 2 );
 		
 		$this->loader->add_filter( 'display_post_states', $plugin_admin, 'sbc_post_states', 10, 2 ); // Show as pending in post list
-//		$this->loader->add_filter( 'edit_form_before_permalink', $plugin_admin, 'sbc_hide_permalink_edit_for_non_publishers', 10, 1 ); // Do not allow users to modify if they cannot publish
 		
 		$this->loader->add_filter( 'get_sample_permalink_html', $plugin_admin, 'sbc_hide_slug_box', 10, 5 );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_remove_post_fields' );
@@ -209,16 +196,7 @@ class Border_Control {
 
 		$plugin_public = new Border_Control_Public( $this->get_plugin_name(), $this->get_version() );
 
-//		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-//		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-
-//		$this->loader->add_action( 'the_post', $plugin_public, 'sbc_set_the_post', 999999, 1 );
 		$this->loader->add_action( 'the_posts', $plugin_public, 'sbc_set_the_posts', 999999, 2 );
-//		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'sbc_set_the_post1', 1, 1 );
-//		$this->loader->add_action( '__before_loop', $plugin_public, 'sbc_alter_query' );
-//		$this->loader->add_action( '__after_loop', $plugin_public, 'sbc_alter_query' );
-
-//		$this->loader->add_action( 'wpseo_head', $plugin_public, 'sbc_seo_head', 9999 );
 
 	}
 
