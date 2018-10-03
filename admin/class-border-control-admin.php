@@ -160,12 +160,7 @@ class Border_Control_Admin {
 		<fieldset>
 			<legend class="screen-reader-text"><span>Controlled Post Types</span></legend>
 			<?php
-			$post_types = get_post_types(
-				array(
-					'public'	=> true,
-				),
-				'objects'
-			);
+			$post_types = get_post_types( [], 'objects' );
 			$name = 'sbc_post_type';
 			foreach ( $post_types as $post_type ) :
 			?>
@@ -286,7 +281,7 @@ class Border_Control_Admin {
 		?>
 			<p><?php esc_html_e('Optionally limit this post to specific moderators from the site moderators.'); ?></p>
 			<label for="owners_owner" class="screen-reader-text"><?php _e( 'Owners', 'owners' ); ?></label>
-			<select name="owners_owner[]" id="owners_owner" class="select2" multiple="multiple">
+			<select name="owners_owner[]" id="owners_owner" class="select2" multiple="multiple" <?php if ( ( ! current_user_can( 'publish_posts' ) ) ) : echo 'required'; endif; ?>>
 				<?php foreach ( $possible_owners as $possible_owner ) : ?>
 					<option value="<?php esc_attr_e( $possible_owner->ID ); ?>"
 						<?php
@@ -313,7 +308,6 @@ class Border_Control_Admin {
 			$permissions[] = $post_type_object->cap->publish_posts;
 		endforeach;
 
-
 		$roles = $wp_roles->get_names();
 		foreach ( $roles as $role => $name ) :// Loop through all_roles.
 			if ( in_array( $role, $selected_roles, true ) ) :// If in roles.
@@ -322,7 +316,9 @@ class Border_Control_Admin {
 				endforeach;
 			else :// Else.
 				foreach ( $permissions as $permission ) :
-					$wp_roles->remove_cap( $role, $permission );// Remove capabilities from role.
+					if ( isset( $wp_roles->roles[$role]['capabilities'][$permission] ) ) {
+						$wp_roles->remove_cap( $role, $permission ); // Remove capabilities from role.
+					}
 				endforeach;
 			endif;
 		endforeach;
@@ -331,7 +327,9 @@ class Border_Control_Admin {
 		foreach ( $users as $user ) :// Loop through all_users.
 			if ( ! in_array( (string) $user->ID, $selected_users, true ) && empty( array_intersect( $user->roles, $selected_roles ) ) ) :// If user role is not in roles and user is not in users.
 				foreach ( $permissions as $permission ) :
-					$user->remove_cap( $permission );// Remove capabilities from user.
+					if ( isset( $user->allcaps[$permission] ) ) :
+						$user->remove_cap( $permission );// Remove capabilities from user.
+					endif;
 				endforeach;
 			else :// Else.
 				foreach ( $permissions as $permission ) :
@@ -354,16 +352,29 @@ class Border_Control_Admin {
 
 		$meta_key = 'owners_owner';
 
-		if ( isset( $_POST['owners_owner'] ) ) :
-			if ( is_array( $_POST['owners_owner'] ) ) :
-				delete_post_meta( $post_id, $meta_key);
+
+		if ( isset( $_POST['owners_owner'] ) ) :// Check if moderators are set.
+
+			if ( is_array( $_POST['owners_owner'] ) ) :// Checks if it's an array (we're expecting array).
+
+				delete_post_meta( $post_id, $meta_key);// Resetting moderator(s).
+
 				foreach ( $_POST['owners_owner'] as $owner ) :
 					add_post_meta( $post_id, $meta_key, $owner );
 				endforeach;
-			else :
-				update_post_meta( $post_id, $meta_key, esc_attr( $_POST['owners_owner'] ) );
+
+			else :// In case it's not an array, do it anyway.
+
+				update_post_meta( $post_id, $meta_key, $_POST['owners_owner'] );
+
 			endif;
+
+        else :// Additional check if moderators aren't set. The only people who can save post without this being set are governance managers and web publishers.
+
+            delete_post_meta( $post_id, $meta_key);// Remove existing moderators.
+
 		endif;
+
 	}
 
 	private function sbc_can_user_moderate() {
@@ -487,6 +498,28 @@ class Border_Control_Admin {
 	}
 
 	/**
+	 * Change submit button text here as well.
+	 *
+	 * @param string $translation the translated text.
+	 * @param string $text the original text.
+	 * @author Warren Reeves
+	 */
+	function sbc_change_publish_button_simple( $translated_text, $text, $domain ) {
+
+		if ( isset( $_GET['post'] ) && is_admin() && ( 'Update' === $text || 'Publish' === $text ) ) :
+			if ( $this->sbc_is_controlled_cpt() ) :
+				if ( post_type_exists( get_post_type( $_GET['post'] ) ) ) :
+					if ( !current_user_can( 'publish_post', $_GET['post'] ) ) :
+						return 'Submit for Review';
+					endif;
+				endif;
+			endif;
+		endif;
+
+		return $translated_text;
+	}
+
+	/**
 	 * Send emails and set post status before the post is added to the database.
 	 *
 	 * @param array $data The data passed via the $_POST parameter.
@@ -499,7 +532,8 @@ class Border_Control_Admin {
 		if ( empty( $postarr ) )
 			return $data;
 
-		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
+		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
+		echo 'is controllled';
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 			if ( isset( $postarr['post_ID'] ) ) :
@@ -531,12 +565,12 @@ class Border_Control_Admin {
 						$message .= $blogname . "\r\n";
 						$message .= get_home_url();
 
-						wp_mail( $author_user->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
+						wp_mail( $owner_author->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
 
 					endforeach;
 
-				elseif ( isset( $postarr['publish'] ) ) :
-					if ( 'pending' === $postarr['original_post_status'] ) :
+				elseif ( isset( $postarr['publish'] ) || 'publish' === $postarr['post_status'] ) :
+					if ( 'pending' === $postarr['original_post_status'] || 'sbc_pending' === $postarr['original_post_status'] && $this->sbc_can_user_moderate() ) :
 						$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 						$approved_owners = get_post_meta( $post_id, '_approve-list' );
@@ -606,27 +640,26 @@ class Border_Control_Admin {
 							endif;
 						endif;
 					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
-						$pending_review_email = true;
+						if ( ! $this->sbc_can_user_moderate() && ! current_user_can( 'publish_post', $post_id ) ) :
+							$pending_review_email = true;
+						endif;
+					elseif ( isset( $postarr['save'] ) && 'Submit for Review' === $postarr['save'] && !$this->sbc_can_user_moderate() ) :
+						if ( 'publish' === $postarr['original_post_status'] ) :
+							$pending_review_email = true;
+						endif;
 					else :
 						if ( false === $this->sbc_can_user_moderate() )
 							$data['post_author'] = $user->ID;
-					endif;
-				elseif ( isset( $postarr['save'] ) && 'Update' === $postarr['save'] ) :
-					if ( 'publish' === $postarr['original_post_status'] ) :
-						$pending_review_email = true;
 					endif;
 				endif;
 			endif;
 			if ( $pending_review_email ) :
 				$post_id = $postarr['post_ID'];
-				$owners = get_post_meta( $post_id, 'owners_owner', false );
-		
-				if ( ! empty( $owners ) ) : 
+				$owners = !empty( get_post_meta( $post_id, 'owners_owner', false ) ) ? get_post_meta( $post_id, 'owners_owner', false ) : $postarr['owners_owner'];
 
+				if ( ! empty( $owners ) ) :
 					foreach ( $owners as $owner_id ) :
-
 						$owner = get_userdata( $owner_id );
-
 						$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
 						$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
 						$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
@@ -634,11 +667,10 @@ class Border_Control_Admin {
 						$message .= $blogname . "\r\n";
 						$message .= get_home_url();
 
-						wp_mail( $author_user->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
+						wp_mail( $owner->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
 
 					endforeach;
 					$data['post_author'] = $user->ID;
-
 					$data['post_status'] = 'sbc_pending';
 				endif;
 			endif;
@@ -681,274 +713,9 @@ class Border_Control_Admin {
 			endif;
 
 		endif;
+		var_dump($data);
+		die;
 		return $data;
-	}
-
-	/**
-	 * Redirect to the edit.php on post save or publish.
-	 *
-	 * @param string $location The locaiton to redirect to.
-	 */
-	public function sbc_after_governance_update( $post_id, $post, $update ) {
-
-		global $wpdb;
-
-		// If this is just a revision, don't send the email.
-		if ( wp_is_post_revision( $post_id ) ) :
-			return;
-		endif;
-		if ( ! get_post_meta( $post_id, 'original', true ) ) :
-			return;
-		endif;
-
-		if ( 'publish' !== get_post_status( $post_id ) ) :
-			return;
-		endif;
-
-		$draft_post = get_post( $post_id );
-
-		// Unhook this function so it doesn't loop infinitely.
-		remove_action('wp_insert_post', 'sbc_after_governance_update');
-
-		wp_update_post(
-			array(
-				'ID' => $post_id,
-				'post_status' => 'pending',
-				'insert_temp_name' => true,
-				'temp_post_name'   => $draft_post->post_name,
-			)
-		);
-
-		if ( false === $this->sbc_can_user_moderate() ) :
-			return;
-		endif;
-
-
-		$original_id = get_post_meta( $post_id, 'original', true );
-		$new_post_id = $original_id;
-		$original_post = get_post( $original_id );
-
-		$post_name = $original_post->post_name;
-		$editable_post_name = $draft_post->post_name;
-
-		$draft_post_array = (array) $draft_post;
-
-		if ( ! $this->sbc_ends_with( $editable_post_name, '-temporary-editable-version' ) ) :
-
-			$post_name = $editable_post_name;
-
-			$draft_post_array['post_name'] = $editable_post_name . '-temporary-editable-version';
-
-			remove_action('save_post', 'sbc_owners_save');
-
-			wp_update_post( $draft_post_array );
-
-			add_action('save_post', 'sbc_owners_save');
-
-		endif;
-
-		$original_post_args = array(
-			'ID'			 => $original_id,
-			'comment_status' => $draft_post->comment_status,
-			'ping_status'    => $draft_post->ping_status,
-			'post_name'		 => $post_name,
-			'post_author'    => $draft_post->post_author,
-			'post_content'   => $draft_post->post_content,
-			'post_excerpt'   => $draft_post->post_excerpt,
-			'post_password'  => $draft_post->post_password,
-			'post_title'     => $draft_post->post_title,
-			'post_type'      => $draft_post->post_type,
-			'to_ping'        => $draft_post->to_ping,
-			'menu_order'     => $draft_post->menu_order,
-			'post_status'	 => 'publish',
-		);
-
-		// Need to make sure that the original post and the editable post do not clash names
-
-		wp_update_post( $original_post_args );
-
-		// Get all current post terms and set them to the new post draft.
-		$taxonomies = get_object_taxonomies( $original_post->post_type ); // Returns array of taxonomy names for post type, ex array("category", "post_tag");
-		foreach ( $taxonomies as $taxonomy ) {
-			$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
-			wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
-		}
-
-		// Duplicate all post meta just in two SQL queries.
-		$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM $wpdb->postmeta
-				 WHERE post_id = %d
-				",
-				$new_post_id
-			)
-		);
-		if ( 0 !== count( $post_meta_infos ) ) {
-			$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
-			foreach ( $post_meta_infos as $meta_info ) {
-				$meta_key = $meta_info->meta_key;
-				if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
-					continue;
-				endif;
-				$meta_value = addslashes( $meta_info->meta_value );
-				$sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
-			}
-			$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
-			$wpdb->query( $sql_query );
-		}
-
-		// Re-hook this function.
-		add_action('wp_insert_post', 'sbc_after_governance_update');
-	}
-
-	/**
-	 * Add custom post types to post status.
-	 *
-	 * @param array $attachment_submitbox_metadata not sure if this is required.
-	 * @author Warren Reeves
-	 */
-	public function sbc_display_post_status( $attachment_submitbox_metadata ) {
-		global $post;
-	?>
-		<div class="misc-pub-section misc-pub-post-status hide-if-no-js">
-			<?php esc_html_e( 'Status:' ) ?>
-			<span id="post-status-display"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
-		</div>
-
-		<script id="true_post_status">
-		jQuery(document).ready(function($) {
-			var $post_status_div = $( '.misc-pub-post-status' );
-			console.log($post_status_div);
-			if ( $post_status_div.length ) {
-				$post_status_div[0].remove();
-			}
-		});
-		</script>
-	<?php
-	}
-
-	/**
-	 * Show noticies on post update, if errors occur.
-	 *
-	 * @author Warren Reeves
-	 */
-	public function sbc_governence_noticies() {
-		global $post;
-		if ( $this->sbc_is_controlled_cpt() ) :
-
-			$options = get_option( 'sbc_settings' );
-			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-
-			$user = wp_get_current_user();
-			$screen = get_current_screen();
-			if ( ! empty( $post ) && 'post' === $screen->base ) :
-				$post_status = get_post_status( $post->ID );
-				$owners = get_post_meta( $post->ID, 'owners_owner', false );
-				if ( 'auto-draft' !== $post_status  ) :
-					if ( empty( $owners ) ) :
-					?>
-						<div class="notice notice-error">
-								<p><?php esc_html_e( 'This post requires at least one owner.' ); ?></p>
-						</div>
-					<?php
-					elseif ( in_array( $screen->id, $post_types, true ) && $post_status && ! empty( $owners ) ) :
-						$approved_owners = get_post_meta( $post->ID, '_approve-list' );
-						$remaining_approve_owners = array_diff( $owners, $approved_owners );
-						if ( 'pending' === get_post_status( $post->ID ) && count( $remaining_approve_owners ) ) :
-							$user_has_approved = false;
-							?>
-							<div class="notice notice-info">
-								<p><?php echo esc_html( 'This post will be published when all owners have reviewed and approved it.' ); ?>
-								<?php if ( (string) $post->post_author === (string) $user->ID ) : ?>
-									<p><?php echo esc_html( 'You are the latest author of this post.' ); ?></p>
-								<?php else : ?>
-									<p><?php echo esc_html( 'The latest author of this post is: ' ); ?><b><?php echo esc_html( get_the_author_meta( 'display_name', $post->post_author ) ); ?></b></p>
-								<p><?php
-								endif;
-								echo esc_html( ' Pending review by ' );
-								$i = 0;
-								$len = count( $remaining_approve_owners );
-								$penultimate = $len - 2;
-								$last = $len - 1;
-
-								if ( in_array( (string) $user->ID, $owners, true ) ) :
-									$user_has_approved = true;
-								endif;
-
-								foreach ( $remaining_approve_owners as $owner_id ) :
-									echo '<b>';
-									if ( (string) $owner_id === (string) $user->ID ) :
-										echo '<u>you</u>';
-										$user_has_approved = false;
-									else :
-										$owner = get_userdata( $owner_id );
-										esc_html_e( $owner->display_name );
-									endif;
-									echo '</b>';
-									if ( $i !== $last ) :
-										if ( $i === $penultimate ) :
-											esc_html_e( ' & ' );
-										else :
-											esc_html_e( ', ' );
-										endif;
-									endif;
-									$i++;
-								endforeach;
-								esc_html_e( '.' );
-								?></p>
-							</div>
-							<?php if ( $user_has_approved ) : ?>
-								<div class="notice notice-success">
-										<p><?php echo wp_kses( '<b>You have approved this post.</b>', array( 'b' => array() ) ); ?></p>
-								</div>
-							<?php endif; ?>
-							<?php
-						endif;
-						if ( 'pending' === get_post_status( $post->ID ) ) :
-							$original_id = get_post_meta( $post->ID, 'original', true );
-
-							if ( $original_id ) :
-								$original_id = (int) $original_id;
-								$original_post = get_post( $original_id );
-								if ( 'publish' === $original_post->post_status ) :
-									?>
-									<div class="notice notice-success">
-										<p><?php echo wp_kses( 'This post is public, you are currently editing a draft of it. If it gets approved then this draft will become public and will be published.', array( 'b' => array() ) ); ?></p>
-									</div>
-									<?php
-								endif;
-							endif;
-						endif;
-					endif;
-				endif;
-			endif;
-		endif;
-	}
-
-	/**
-	 * Show metabox for a table of posts which the user is the owner of.
-	 *
-	 * @author Warren Reeves
-	 */
-	public function sbc_awaiting_review_approval_widgets() {
-		global $wp_meta_boxes;
-		if ( $this->sbc_is_controlled_cpt() ) :
-			wp_add_dashboard_widget(
-				'pending_review_widget', // Widget slug.
-				'Pending Review', // Title.
-				'awaiting_review_approval_function' // Display function.
-			);
-
-			$dashboard = $wp_meta_boxes['dashboard']['normal']['core'];
-
-			$my_widget = array( 'pending_review_widget' => $dashboard['pending_review_widget'] );
-			unset( $dashboard['pending_review_widget'] );
-
-			$sorted_dashboard = array_merge( $my_widget, $dashboard );
-			$wp_meta_boxes['dashboard']['normal']['core'] = $sorted_dashboard;
-		endif;
-
 	}
 
 	/**
@@ -1048,209 +815,11 @@ class Border_Control_Admin {
 		endif;
 	}
 
-	/**
-	 * Create draft when editing a post
-	 */
-	public function sbc_create_draft() {
-		global $wpdb;
-		if ( ! is_admin() ) :
-			return false;
-		endif;
-		if ( ! isset( $_GET['action'] ) || 'edit' !== $_GET['action'] ) :
-			return false;
-		endif;
-
-		$post_id = ( isset( $_GET['post'] ) ? absint( $_GET['post'] ) : absint( $_POST['post'] ) );
-
-		$options = get_option( 'sbc_settings' );
-		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-
-		if ( in_array( get_post_type( $post_id ), $post_types, true ) ) :
-
-			$original = get_post_meta( $post_id, 'original', true );
-			// $original is both a check for the editable version of a post and a truthy for if this post is the original. Naming could do with clarification.
-			delete_post_meta( $post_id, 'is_under_review' );
-
-			if ( $original && (int)$original === (int)$post_id ) :
-				delete_post_meta( $post_id, 'original' );
-				wp_redirect( get_edit_post_link( $post_id ) );
-				die;
-			endif;
-
-			if ( $original ) :
-				return false;
-			else :
-				$args = array(
-					'post_type' => get_post_type( $post_id ),
-					'post_status' => 'pending',
-					'meta_query' => array(
-						array(
-							'key' => 'original',
-							'value' => (string) $post_id,
-							'compare' => '=',
-						)
-					)
-				);
-				$query = new WP_Query( $args );
-				if ( $query->have_posts() ) :
-					while ( $query->have_posts() ) : $query->the_post();
-						$_GET['edit_post'] = get_the_ID();
-					endwhile;
-					/* Restore original Post Data */
-					wp_reset_postdata();
-				else :
-
-					$post = get_post( $post_id );
-
-					if ( 'draft' === $post->post_status || 'pending' === $post->post_status ) :
-						return false;
-					endif;
-
-					if ( 'publish' !== $post->post_status ) :
-
-						// Set the original post status to custom post status to await approval
-						$args = array(
-							'ID'			=> (string) $post_id,
-//							'post_status'   => 'pending',
-							'post_status'   => 'awaiting_publish',
-						);
-						wp_update_post( $args );
-
-					endif;
-
-					$current_user = wp_get_current_user();
-					$new_post_author = $current_user->ID;
-
-					/*
-					 * If post data exists, create the post duplicate.
-					 */
-					if ( isset( $post ) && null !== $post ) {
-
-						/*
-						 * New post data array.
-						 */
-						$args = array(
-							'comment_status'   => $post->comment_status,
-							'ping_status'      => $post->ping_status,
-							'post_author'      => $post->post_author,
-							'post_content'     => $post->post_content,
-							'post_excerpt'     => $post->post_excerpt,
-							'post_name'        => $post->post_name . '-temporary-editable-version',
-							'post_parent'      => $post->post_parent,
-							'post_password'    => $post->post_password,
-							'post_status'      => 'pending',
-							'post_title'       => $post->post_title,
-							'post_type'        => $post->post_type,
-							'to_ping'          => $post->to_ping,
-							'menu_order'       => $post->menu_order,
-							'insert_temp_name' => true,
-							'temp_post_name'   => $post->post_name,
-						);
-
-						/*
-						 * insert the post by wp_insert_post() function
-						 */
-						$new_post_id = wp_insert_post( $args );
-
-						/*
-						 * get all current post terms and set them to the new post draft
-						 */
-						$taxonomies = get_object_taxonomies( $post->post_type ); // returns array of taxonomy names for post type, ex array("category", "post_tag");
-						foreach ( $taxonomies as $taxonomy ) {
-							$post_terms = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'slugs' ) );
-							wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
-						}
-
-						/*
-						 * Duplicate all post meta just in two SQL queries.
-						 */
-						$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
-						if ( 0 !== count( $post_meta_infos ) ) {
-							$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
-							foreach ( $post_meta_infos as $meta_info ) {
-								$meta_key = $meta_info->meta_key;
-								if ( '_wp_old_slug' === $meta_key ) :
-									continue;
-								endif;
-								$meta_value = addslashes( $meta_info->meta_value );
-								$sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
-							}
-							$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
-							$wpdb->query( $sql_query );
-						}
-
-						/*
-						 * Reasign all post revisions to the new post.
-						 */
-						$revisions = wp_get_post_revisions( $post_id );
-						foreach ( $revisions as $revision ) :
-							wp_update_post(
-								array(
-	//								'ID' => $revision->ID,
-									'post_parent' => $new_post_id,
-								)
-							);
-						endforeach;
-
-						add_post_meta( $new_post_id, 'original', $post_id, true );
-
-						/*
-						 * finally, redirect to the edit post screen for the new draft
-						 */
-						wp_redirect( get_edit_post_link( $post_id ) );
-						exit;
-					} else {
-						wp_die( "Post creation failed, could not find original post: $post_id" );
-					}
-				endif;
-			endif;
-		endif;
-	}
-
-	public function sbc_filter_post_data( $data, $postarr ) {
-
-		if ( isset( $postarr['insert_temp_name'] ) && true === $postarr['insert_temp_name'] && isset(  $postarr['temp_post_name'] ) && ! empty( $postarr['temp_post_name'] ) ) {
-			$data['post_name'] = $postarr['temp_post_name'] . '-temporary-editable-version';
-		}
-		return $data;
-	}
-
-	/**
-	 * Filter originals from drafts in admin post list
-	 *
-	 * @param string $query the query to modify.
-	 */
-	public function sbc_hide_pending() {
-		global $wp_post_statuses;
-		$post_type = 'post';
-		if ( isset( $_GET['post_type'] ) ) :
-            // Will occur only in this screen: /wp-admin/edit.php?post_type=page
-            $post_type = $_GET['post_type'];
-        endif;
-
-		$options = get_option( 'sbc_settings' );
-		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-
-		if ( in_array( $post_type, $post_types, true ) ) :
-			$wp_post_statuses['pending']->show_in_admin_all_list = false;
-		endif;
-	}
-
 	public function sbc_ends_with( $haystack, $needle ) {
 		$length = strlen($needle);
 
 		return $length === 0 ||
 		(substr($haystack, -$length) === $needle);
-	}
-
-	public function sbc_override_edited_post( $query ) {
-//		$screen = get_current_screen();
-//		echo '<pre>'; var_dump($query); echo '</pre>';
-//		if ( $this->sbc_is_controlled_cpt() && is_admin() && $screen->base == 'post' && $query->is_main_query() ) :
-//		die;
-//			if ( get_post_meta( $post_id, 'original', true ) ) :
-//			endif;
-//		endif;
 	}
 
 	public function sbc_register_pending() {
@@ -1276,6 +845,7 @@ class Border_Control_Admin {
 			'show_in_admin_status_list' => true,
 			'label_count'               => _n_noop( 'Needs Improvement <span class="count">(%s)</span>', 'Need Improvement <span class="count">(%s)</span>' ),
 		) );
+
 		register_post_status( 'sbc_publish', array(
 			'label'                     => _x( 'Pending Publish', 'sbc' ),
 			'public'                    => false,
@@ -1294,7 +864,11 @@ class Border_Control_Admin {
 
 		if ( $new_status === $old_status )
 			return;
-		if ( 'publish' !== $new_status )
+		if ( 'publish' === $new_status || 'sbc_improve' === $new_status )
+			return;
+        if ( ( $old_status === 'draft' ) and ( $new_status === 'sbc_pending' ) )
+			return;
+		if ( 'sbc_improve' === $old_status && 'sbc_pending' === $new_status )
 			return;
 
 		$options = get_option( 'sbc_settings' );
@@ -1304,9 +878,10 @@ class Border_Control_Admin {
 			$revisions = wp_get_post_revisions( $post->ID, array(
 				'posts_per_page' => 1
 			));
-			foreach ( $revisions as $revision ) :
-				update_post_meta( $post->ID, '_latest_revision', $revision->ID );
-			endforeach;
+
+            foreach ( $revisions as $revision ) :
+                update_post_meta( $post->ID, '_latest_revision', $revision->ID );
+            endforeach;
 
 		endif;
 		return;
@@ -1340,7 +915,7 @@ class Border_Control_Admin {
 			else :
 				if ( 'pending' === $data['post_status'] ) :
 					$data['post_status'] = 'sbc_pending';
-				elseif ( ! current_user_can( 'publish_posts', $post_type_object->cap->publish_posts ) ) :
+				elseif ( ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
 					if ( 'publish' === $data['post_status'] ) :
 						$data['post_status'] = 'sbc_pending';
 					endif;
@@ -1388,7 +963,7 @@ class Border_Control_Admin {
 	}
 	
 	public function sbc_post_states( $post_states, $post ) {
-		$post_status = $_REQUEST['post_status'];
+		$post_status = $post->post_status;
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 		if ( in_array( $post->post_type, $post_types ) ) :
@@ -1397,11 +972,6 @@ class Border_Control_Admin {
 			}
 		endif;
 		return $post_states;
-	}
-	
-	public function sbc_hide_permalink_edit_for_non_publishers( $post ) {
-		global $viewable;
-		$viewable = false;
 	}
 
 	public function sbc_force_revisions() {
