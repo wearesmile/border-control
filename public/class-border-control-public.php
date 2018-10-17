@@ -75,7 +75,7 @@ class Border_Control_Public {
 				if ( ! in_array( $post_object->post_status, [ 'publish', 'sbc_publish' ] ) && in_array( $post_object->post_type, $post_types, true ) ) :
 					$last_public = get_post_meta( $post_object->ID, '_latest_revision', true );
 					if ( empty( $last_public ) ) :
-						if ( is_singular() && ! ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
+						if ( is_main_query() && is_singular() && ! ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) ) :
 							$wp_query->set_404();
 							status_header( 404 );
 							echo '<!-- 2BORDER CONTROLLED 404 -->';
