@@ -15,7 +15,7 @@
  * @wordpress-plugin
  * Plugin Name:       Border Control
  * Plugin URI:        https://wearesmile.com
- * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
+ * Description:       A publishing workflow for WordPress.
  * Author:            SMILE
  * Author URI:        https://wearesmile.com
  * License:           GPL-2.0+
