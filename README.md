@@ -41,3 +41,13 @@ Border Control adds a meta box to the post interface where users can select a mo
 
 # Contributing
 Please read CONTRIBUTING.md for details on our code of conduct, and the process for submitting pull requests to us.
+
+# Known issues
+
+**Moderator can't publish**
+
+Border control works on WordPress capabilities. If the role can't publish, then they will not be able to publish posts. You should not set these roles as a moderation role. In future we should probably not even allow these to be selected. So for now, only choose a role with the ability to publish to be a moderator.
+
+**Email notification has not been received**
+
+There seems to be an issue with Gutenberg where the emails are not sent on submission for approval.
