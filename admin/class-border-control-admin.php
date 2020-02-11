@@ -859,26 +859,28 @@ class Border_Control_Admin {
 
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return;
 
-		if ( $new_status === $old_status )
+		if ( 'publish' !== $old_status || $new_status === $old_status ) :
 			return;
-		if ( 'publish' === $new_status || 'sbc_improve' === $new_status )
-			return;
-        if ( ( $old_status === 'draft' ) and ( $new_status === 'sbc_pending' ) )
-			return;
-		if ( 'sbc_improve' === $old_status && 'sbc_pending' === $new_status )
-			return;
+		endif;
 
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
 		if ( in_array( $post->post_type, $post_types ) ) :
-			$revisions = wp_get_post_revisions( $post->ID, array(
-				'posts_per_page' => 1
-			));
 
-            foreach ( $revisions as $revision ) :
-                update_post_meta( $post->ID, '_latest_revision', $revision->ID );
-            endforeach;
+			$revisions = get_posts(
+				array(
+					'orderby'     => 'date',
+					'order'       => 'DESC',
+					'post_status' => array( 'inherit', 'sbc_publish' ),
+					'post_type'   => 'revision',
+					'numberposts' => '1',
+					'post_parent' => $post->ID,
+					'name'        => $post->ID . '-revision-v1',
+				)
+			);
+
+			update_post_meta( $post->ID, '_latest_revision', $revisions[0]->ID );
 
 		endif;
 		return;
@@ -981,37 +983,77 @@ class Border_Control_Admin {
 
 	public function sbc_save_post_revision_meta( $post_id, $data ) {
 
-		// Get the latest revision.
-		$last_public = get_post_meta( $post_id, '_latest_revision', true );
+		$current_post = get_post( $post_id );
 
-		if ( $last_public ) {
+		if ( 'publish' === $current_post->post_status || 'publish' === $data['post_status'] ) :
+			$revision = wp_save_post_revision( $post_id );
+		endif;
 
-			// Duplicate all post meta just in two SQL queries.
-			global $wpdb;
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM $wpdb->postmeta
-					 WHERE post_id = %d
-					",
-					$last_public
-				)
-			);
-			$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
-			if ( 0 !== count( $post_meta_infos ) ) {
-				$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
-				foreach ( $post_meta_infos as $meta_info ) {
-					$meta_key = $meta_info->meta_key;
-					if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
-						continue;
-					endif;
-					$meta_value = addslashes( $meta_info->meta_value );
-					$sql_query_sel[] = "SELECT $last_public, '$meta_key', '$meta_value'";
-				}
-				$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
-				$wpdb->query( $sql_query );
-			}
+		/**
+		 * When the user clicks publish,
+		 * set the most recent revision as the publically visible post.
+		 */
+		if ( 'publish' === $data['post_status'] || 'publish' === $current_post->post_status ) {
+			$options = get_option( 'sbc_settings' );
+			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
+			if ( in_array( $data['post_type'], $post_types ) ) :
+
+				$revisions = get_posts(
+					array(
+						'orderby'     => 'date',
+						'order'       => 'DESC',
+						'post_status' => array( 'inherit', 'sbc_publish' ),
+						'post_type'   => 'revision',
+						'numberposts' => '1',
+						'post_parent' => $post_id,
+						'name'        => $post_id . '-revision-v1',
+					)
+				);
+
+				$revision = ! $revision ? $revisions[0]->ID : $revision;
+
+				update_post_meta( $post_id, '_latest_revision', $revision );
+
+			endif;
 		}
+
+		/**
+		 * If the post has just been
+		 */
+		if ( 'publish' === $current_post->post_status ) :
+
+			// Otherwise we grab the most
+			$last_public = get_post_meta( $post_id, '_latest_revision', true );
+
+			if ( $last_public ) {
+
+				// Duplicate all post meta just in two SQL queries.
+				global $wpdb;
+				$wpdb->query(
+					$wpdb->prepare(
+						"DELETE FROM $wpdb->postmeta
+						WHERE post_id = %d
+						",
+						$last_public
+					)
+				);
+				$post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+				if ( 0 !== count( $post_meta_infos ) ) {
+					$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+					foreach ( $post_meta_infos as $meta_info ) {
+						$meta_key = $meta_info->meta_key;
+						if ( '_wp_old_slug' === $meta_key || 'original' === $meta_key ) :
+							continue;
+						endif;
+						$meta_value = addslashes( $meta_info->meta_value );
+						$sql_query_sel[] = "SELECT $last_public, '$meta_key', '$meta_value'";
+					}
+					$sql_query .= implode( ' UNION ALL ', $sql_query_sel );
+					$wpdb->query( $sql_query );
+				}
+			}
+		endif;
 	}
 
 	public function remove_quick_edit( $actions ) {
