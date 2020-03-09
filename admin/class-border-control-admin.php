@@ -889,16 +889,18 @@ class Border_Control_Admin {
 		if ( ! is_admin() ) return;
 		$editor = get_role( 'editor' );
 
-		// A list of capabilities to remove from editors.
-		$caps = array(
-			'publish_posts',
-			'publish_pages',
-		);
+		if ( $editor ) {
+			// A list of capabilities to remove from editors.
+			$caps = array(
+				'publish_posts',
+				'publish_pages',
+			);
 
-		foreach ( $caps as $cap ) {
+			foreach ( $caps as $cap ) {
 
-			// Remove the capability.
-			$editor->remove_cap( $cap );
+				// Remove the capability.
+				$editor->remove_cap( $cap );
+			}
 		}
 	}
 	public function sbc_publish_check( $data, $postarr ) {
