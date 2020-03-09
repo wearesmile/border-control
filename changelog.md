@@ -11,3 +11,9 @@ Fix:
 Bugfixes:
 
   - Post meta is now only copied over from latest revision on publish, this resolves a bug where post meta would show as updated even if the post had not been approved.
+
+## 1.0.51 (09-03-2020)
+
+Bugfixes:
+
+  - Added a conditional to sbc_manage_caps method to prevent errors if the editor role didn't exist.
