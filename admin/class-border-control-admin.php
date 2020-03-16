@@ -657,10 +657,14 @@ class Border_Control_Admin {
 				$owners = !empty( get_post_meta( $post_id, 'owners_owner', false ) ) ? get_post_meta( $post_id, 'owners_owner', false ) : $postarr['owners_owner'];
 
 				if ( ! empty( $owners ) ) :
+
+					// Don't tell the owners that the post that needs approving is called auto draft.
+					$previous_title = 'Auto Draft' !== $prev_post->post_title ? $prev_post->post_title : $postarr['post_title'];
+
 					foreach ( $owners as $owner_id ) :
 						$owner = get_userdata( $owner_id );
 						$message = 'Hi ' . $owner->display_name . ",\r\n\r\n";
-						$message .= 'This notice is to confirm that "' . $prev_post->post_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
+						$message .= 'This notice is to confirm that "' . $previous_title . '" is pending review by you on ' . $blogname . ".\r\n\r\n";
 						$message .= "Please review it here:\r\n" . get_edit_post_link( $post_id, '&' ). "\r\n\r\n";
 						$message .= "Regards, \r\n";
 						$message .= $blogname . "\r\n";
