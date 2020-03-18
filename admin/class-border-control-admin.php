@@ -719,6 +719,41 @@ class Border_Control_Admin {
 		return $data;
 	}
 
+	public function save_post_revision_meta( $post_ID, $post, $update ) {
+
+		$parent_id = wp_is_post_revision( $post_id );
+
+		if ( $parent_id ) {
+
+			$parent  = get_post( $parent_id );
+			$my_meta = get_post_meta( $parent->ID, 'my_meta', true );
+
+			if ( false !== $my_meta )
+				add_metadata( 'post', $post_id, 'my_meta', $my_meta );
+
+		}
+
+	}
+
+	public function restore_revision( $post_id, $revision_id ) {
+
+		$post           = get_post( $post_id );
+		$revision       = get_post( $revision_id );
+		$revision_meta  = get_metadata( 'post', $revision->ID, '', true );
+
+		// foreach ( $revision_meta as $key => $meta ) {
+
+
+
+		// }
+
+		// if ( false !== $my_meta )
+		// 	update_post_meta( $post_id, 'my_meta', $my_meta );
+		// else
+		// 	delete_post_meta( $post_id, 'my_meta' );
+
+	}
+
 	/**
 	 * Show all of the posts which the user is an owner of, this may require limiting.
 	 *
@@ -936,7 +971,7 @@ class Border_Control_Admin {
 		endif;
 		return $data;
 	}
-	
+
 	public function sbc_hide_slug_box( $return, $post_id, $new_title, $new_slug, $post ) {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
@@ -957,7 +992,7 @@ class Border_Control_Admin {
 		endif;
 		return $return;
 	}
-	
+
 	public function sbc_remove_post_fields() {
 		global $pagenow;
 		$options = get_option( 'sbc_settings' );
@@ -966,7 +1001,7 @@ class Border_Control_Admin {
 			remove_meta_box( 'slugdiv' , 'page' , 'normal' );
 		endif;
 	}
-	
+
 	public function sbc_post_states( $post_states, $post ) {
 		$post_status = $post->post_status;
 		$options = get_option( 'sbc_settings' );
