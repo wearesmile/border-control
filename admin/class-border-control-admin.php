@@ -719,38 +719,13 @@ class Border_Control_Admin {
 		return $data;
 	}
 
-	public function save_post_revision_meta( $post_ID, $post, $update ) {
+	public function save_post_revision_meta( $revision_id ) {
 
-		$parent_id = wp_is_post_revision( $post_id );
-
-		if ( $parent_id ) {
-
-			$parent  = get_post( $parent_id );
-			$my_meta = get_post_meta( $parent->ID, 'my_meta', true );
-
-			if ( false !== $my_meta )
-				add_metadata( 'post', $post_id, 'my_meta', $my_meta );
-
-		}
+		add_meta( $revision_id );
 
 	}
 
 	public function restore_revision( $post_id, $revision_id ) {
-
-		$post           = get_post( $post_id );
-		$revision       = get_post( $revision_id );
-		$revision_meta  = get_metadata( 'post', $revision->ID, '', true );
-
-		// foreach ( $revision_meta as $key => $meta ) {
-
-
-
-		// }
-
-		// if ( false !== $my_meta )
-		// 	update_post_meta( $post_id, 'my_meta', $my_meta );
-		// else
-		// 	delete_post_meta( $post_id, 'my_meta' );
 
 	}
 

@@ -184,7 +184,7 @@ class Border_Control {
 		$this->loader->add_filter( 'wp_revisions_to_keep', $plugin_admin, 'sbc_revisions_to_keep', 10, 2 ); // Keep infinite revisions
 
 		// Hooks for saving / restoring post meta data.
-		$this->loader->add_action( 'save_post', $plugin_admin, 'save_post_revision_meta', 10, 3 );
+		$this->loader->add_action( '_wp_put_post_revision', $plugin_admin, 'save_post_revision_meta', 10, 3 );
 		$this->loader->add_action( 'wp_restore_post_revision', $plugin_admin, 'restore_revision', 10, 2 );
 	}
 
