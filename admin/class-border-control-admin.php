@@ -723,10 +723,20 @@ class Border_Control_Admin {
 
 		add_meta( $revision_id );
 
+
+		return $revision_id;
 	}
 
 	public function restore_revision( $post_id, $revision_id ) {
 
+		$post_meta = get_post_meta( $revision_id );
+
+		foreach ( $post_meta as $key => $value ) :
+
+			update_post_meta( $post_id, $key, unserialize( $value[0] ) );
+		endforeach;
+
+		return $post_id;
 	}
 
 	/**
