@@ -731,10 +731,6 @@ class Border_Control_Admin {
 
 		$post_meta = get_post_meta( $revision_id );
 
-		// var_dump( $post_id );
-		// var_dump( $revision_id );
-		// die;
-
 		foreach ( $post_meta as $key => $value ) :
 			if ( is_serialized( $value[0] ) ) :
 				update_post_meta( $post_id, $key, unserialize( $value[0] ) );
@@ -1061,7 +1057,7 @@ class Border_Control_Admin {
 			$last_public = get_post_meta( $post_id, '_latest_revision', true );
 
 			if ( $last_public ) {
-				die('here');
+
 				// Duplicate all post meta just in two SQL queries.
 				global $wpdb;
 				$wpdb->query(
