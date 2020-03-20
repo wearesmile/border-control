@@ -723,7 +723,6 @@ class Border_Control_Admin {
 
 		add_meta( $revision_id );
 
-
 		return $revision_id;
 	}
 
@@ -1011,23 +1010,22 @@ class Border_Control_Admin {
 		endforeach;
 	}
 
-	public function sbc_save_post_revision_meta( $post_id, $data ) {
-
-		$current_post = get_post( $post_id );
-
-		if ( 'publish' === $current_post->post_status || 'publish' === $data['post_status'] ) :
-			$revision = wp_save_post_revision( $post_id );
-		endif;
+	/**
+	 * Move post meta to public post once saved.
+	 */
+	public function update_latest_post_meta( $post_id, $current_post, $update ) {
 
 		/**
-		 * When the user clicks publish,
-		 * set the most recent revision as the publically visible post.
+		 * If the post has just been
 		 */
-		if ( 'publish' === $data['post_status'] || 'publish' === $current_post->post_status ) {
+		if ( 'publish' === $current_post->post_status ) :
+
+			$revision = wp_save_post_revision( $post_id );
+
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
-			if ( in_array( $data['post_type'], $post_types ) ) :
+			if ( in_array( $current_post->post_type, $post_types ) ) :
 
 				$revisions = get_posts(
 					array(
@@ -1046,12 +1044,6 @@ class Border_Control_Admin {
 				update_post_meta( $post_id, '_latest_revision', $revision );
 
 			endif;
-		}
-
-		/**
-		 * If the post has just been
-		 */
-		if ( 'publish' === $current_post->post_status ) :
 
 			// Otherwise we grab the most
 			$last_public = get_post_meta( $post_id, '_latest_revision', true );
@@ -1084,6 +1076,7 @@ class Border_Control_Admin {
 				}
 			}
 		endif;
+
 	}
 
 	public function remove_quick_edit( $actions ) {
