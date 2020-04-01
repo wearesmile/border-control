@@ -719,6 +719,11 @@ class Border_Control_Admin {
 		return $data;
 	}
 
+	/**
+	 * Save post meta for revisions.
+	 *
+	 * @author James Glendenning
+	 */
 	public function save_post_revision_meta( $revision_id ) {
 
 		add_meta( $revision_id );
@@ -726,6 +731,11 @@ class Border_Control_Admin {
 		return $revision_id;
 	}
 
+	/**
+	 * Restore the saved post meta.
+	 *
+	 * @author James Glendenning
+	 */
 	public function restore_revision( $post_id, $revision_id ) {
 
 		$post_meta = get_post_meta( $revision_id );
