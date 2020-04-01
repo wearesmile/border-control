@@ -173,8 +173,6 @@ class Border_Control {
 		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 9999, 2 ); // Force `sbc_` post statuses.
 
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_force_revisions' ); // Enable revisions on selected post types.
-
-		$this->loader->add_action( 'pre_post_update', $plugin_admin, 'sbc_save_post_revision_meta', 1, 2 );
 		
 		$this->loader->add_filter( 'display_post_states', $plugin_admin, 'sbc_post_states', 10, 2 ); // Show as pending in post list
 		
@@ -183,6 +181,11 @@ class Border_Control {
 		
 		$this->loader->add_filter( 'wp_revisions_to_keep', $plugin_admin, 'sbc_revisions_to_keep', 10, 2 ); // Keep infinite revisions
 
+		// Hooks for saving / restoring post meta data.
+		$this->loader->add_action( '_wp_put_post_revision', $plugin_admin, 'save_post_revision_meta', 10, 3 );
+		$this->loader->add_action( 'wp_restore_post_revision', $plugin_admin, 'restore_revision', 10, 2 );
+
+		$this->loader->add_action( 'save_post', $plugin_admin, 'update_latest_post_meta', 10, 3 );
 	}
 
 	/**

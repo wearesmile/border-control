@@ -720,6 +720,39 @@ class Border_Control_Admin {
 	}
 
 	/**
+	 * Save post meta for revisions.
+	 *
+	 * @author James Glendenning
+	 */
+	public function save_post_revision_meta( $revision_id ) {
+
+		add_meta( $revision_id );
+
+		return $revision_id;
+	}
+
+	/**
+	 * Restore the saved post meta.
+	 *
+	 * @author James Glendenning
+	 */
+	public function restore_revision( $post_id, $revision_id ) {
+
+		$post_meta = get_post_meta( $revision_id );
+
+		foreach ( $post_meta as $key => $value ) :
+			if ( is_serialized( $value[0] ) ) :
+				update_post_meta( $post_id, $key, unserialize( $value[0] ) );
+			else :
+				update_post_meta( $post_id, $key, $value[0] );
+			endif;
+
+		endforeach;
+
+		return $post_id;
+	}
+
+	/**
 	 * Show all of the posts which the user is an owner of, this may require limiting.
 	 *
 	 * @author Warren Reeves
@@ -936,7 +969,7 @@ class Border_Control_Admin {
 		endif;
 		return $data;
 	}
-	
+
 	public function sbc_hide_slug_box( $return, $post_id, $new_title, $new_slug, $post ) {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
@@ -957,7 +990,7 @@ class Border_Control_Admin {
 		endif;
 		return $return;
 	}
-	
+
 	public function sbc_remove_post_fields() {
 		global $pagenow;
 		$options = get_option( 'sbc_settings' );
@@ -966,7 +999,7 @@ class Border_Control_Admin {
 			remove_meta_box( 'slugdiv' , 'page' , 'normal' );
 		endif;
 	}
-	
+
 	public function sbc_post_states( $post_states, $post ) {
 		$post_status = $post->post_status;
 		$options = get_option( 'sbc_settings' );
@@ -987,23 +1020,22 @@ class Border_Control_Admin {
 		endforeach;
 	}
 
-	public function sbc_save_post_revision_meta( $post_id, $data ) {
-
-		$current_post = get_post( $post_id );
-
-		if ( 'publish' === $current_post->post_status || 'publish' === $data['post_status'] ) :
-			$revision = wp_save_post_revision( $post_id );
-		endif;
+	/**
+	 * Move post meta to public post once saved.
+	 */
+	public function update_latest_post_meta( $post_id, $current_post, $update ) {
 
 		/**
-		 * When the user clicks publish,
-		 * set the most recent revision as the publically visible post.
+		 * If the post has just been
 		 */
-		if ( 'publish' === $data['post_status'] || 'publish' === $current_post->post_status ) {
+		if ( 'publish' === $current_post->post_status ) :
+
+			$revision = wp_save_post_revision( $post_id );
+
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
-			if ( in_array( $data['post_type'], $post_types ) ) :
+			if ( in_array( $current_post->post_type, $post_types ) ) :
 
 				$revisions = get_posts(
 					array(
@@ -1022,12 +1054,6 @@ class Border_Control_Admin {
 				update_post_meta( $post_id, '_latest_revision', $revision );
 
 			endif;
-		}
-
-		/**
-		 * If the post has just been
-		 */
-		if ( 'publish' === $current_post->post_status ) :
 
 			// Otherwise we grab the most
 			$last_public = get_post_meta( $post_id, '_latest_revision', true );
@@ -1060,6 +1086,7 @@ class Border_Control_Admin {
 				}
 			}
 		endif;
+
 	}
 
 	public function remove_quick_edit( $actions ) {
