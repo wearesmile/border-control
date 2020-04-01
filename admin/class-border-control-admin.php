@@ -726,7 +726,9 @@ class Border_Control_Admin {
 	 */
 	public function save_post_revision_meta( $revision_id ) {
 
-		add_meta( $revision_id );
+		if ( function_exists( 'add_meta' ) ) {
+			add_meta( $revision_id );
+		}
 
 		return $revision_id;
 	}
