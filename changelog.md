@@ -24,9 +24,15 @@ Bugfixes:
 
   - Added a Tertiary variable for the post title that is pulled through when we notify the owner of changes to a post. Previously you could recieve an email telling you that the post titled `auto draft` had been updated. Which wasn't particularly useful to the end user.
 
-## 1.0.53 (19-03-2020)
+## 1.0.53 (01-04-2020)
 
 Feature:
 
   - Users can now preview post meta changes
   - Users can now restore post meta changes from old revisions.
+
+## 1.0.54 (01-04-2020)
+
+Hotfix:
+
+  - Added a function exists check for add meta function.
