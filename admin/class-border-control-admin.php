@@ -150,11 +150,60 @@ class Border_Control_Admin {
 			'sbc_borderControlPage_section'
 		);
 
+		add_settings_field(
+			'sbc_post_type_edit',
+			__( 'The following post types can invite others.', 'smile' ),
+			array( $this, 'sbc_post_type_edit_render' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
+		);
+
+		add_settings_field(
+			'sbc_send_invite_email',
+			__( 'Send Notifications on invite.', 'smile' ),
+			array( $this, 'sbc_send_inivte_email' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
+		);
+
 	}
 
+	/**
+	 * Option box for enabling email notifications
+	 */
+	public function sbc_send_inivte_email() {
+		$options = get_option( 'sbc_settings' );
+		?>
+			<?php
+			$name = 'sbc_send_invite_email';
+			?>
+			<input type="checkbox" name="sbc_settings[<?php esc_attr_e( $name ); ?>]" value="send_email" <?php
+				if ( isset( $options[ $name ] ) && 'send_email' === $options[ $name ] ) :
+				   echo 'checked="checked"';
+				endif; ?>>
+		<?php
+	}
+
+	public function sbc_post_type_edit_render() {
+		$options = get_option( 'sbc_settings' );
+		?>
+		<fieldset>
+			<legend class="screen-reader-text"><span>Controlled Post Types</span></legend>
+			<?php
+			$post_types = get_post_types( [], 'objects' );
+			$name = 'sbc_post_type_edit';
+			foreach ( $post_types as $post_type ) :
+			?>
+			<label><input type="checkbox" name="sbc_settings[<?php esc_attr_e( $name ); ?>][]" value="<?php esc_attr_e( $post_type->name ); ?>" <?php
+				if ( isset( $options[ $name ] ) && in_array( $post_type->name, $options[ $name ] ) ) :
+				   echo 'checked="checked"';
+				endif; ?>> <span class=""><?php esc_html_e( $post_type->label ); ?></span></label><br>
+			<?php endforeach; ?>
+		</fieldset>
+		<?php
+	}
 
 	public function sbc_post_type_render() {
-
 		$options = get_option( 'sbc_settings' );
 		?>
 		<fieldset>
@@ -173,6 +222,54 @@ class Border_Control_Admin {
 		<?php
 	}
 
+	public function sbc_grant_edit_access( $allcaps, $cap, $args ) {
+		if ( ! isset( $_POST ) ) {
+			return $allcaps;
+		}
+
+		$options = get_option( 'sbc_settings' );
+
+		if ( !$options || !isset( $options['sbc_post_type_edit'] ) ) {
+			return $allcaps;
+		}
+
+		$post_types = ( is_array( $options['sbc_post_type_edit'] ) ) ? $options['sbc_post_type_edit'] : array( $options['sbc_post_type_edit'] );
+
+		$post_id = isset ( $args[2] ) ? $args[2] : null;
+
+		if ( in_array( $post_id, $post_types ) ) {
+			return $allcaps;
+		}
+
+		$users = get_post_meta( $post_id, 'editors_editor', false );
+
+		$users = is_array( $users ) ? $users : array( $users );
+
+		if( is_array( $users ) && in_array( wp_get_current_user()->ID, $users ) ) {
+			$allcaps['edit_others_posts'] = true;
+			$allcaps['edit_published_posts'] = true;
+			$allcaps['edit_posts'] = true;
+			$allcaps['edit_private_posts'] = true;
+
+			return $allcaps;
+		}
+
+		$post_id = isset( $_POST['post_ID'] ) ? $_POST['post_ID'] : null;
+
+		$users = get_post_meta( $post_id, 'editors_editor', false );
+		$users = is_array( $users ) ? $users : array( $users );
+
+		if ( $post_id && is_array( $users ) && in_array(  wp_get_current_user()->ID, $users ) ) {
+			$allcaps['edit_others_posts'] = true;
+			$allcaps['edit_published_posts'] = true;
+			$allcaps['edit_posts'] = true;
+			$allcaps['edit_private_posts'] = true;
+
+			return $allcaps;
+		}
+
+		return $allcaps;
+	}
 
 	public function sbc_users_render() {
 		$name = 'sbc_users';
@@ -236,6 +333,131 @@ class Border_Control_Admin {
 
 	}
 
+	public function sbc_editors_add_meta_box() {
+		$options = get_option( 'sbc_settings' );
+
+		if ( !$options || !isset( $options['sbc_post_type_edit'] ) ) {
+			return;
+		}
+
+		$post_types = ( is_array( $options['sbc_post_type_edit'] ) ) ? $options['sbc_post_type_edit'] : array( $options['sbc_post_type_edit'] );
+		add_meta_box(
+			'editors-editors',
+			__( 'Post Editors', 'editors' ),
+			array( $this, 'sbc_editors_html' ),
+			$post_types,
+			'side',
+			'high'
+		);
+	}
+
+
+	public function sbc_editors_html( $post ) {
+		wp_nonce_field( '_editors_nonce', 'editors_nonce' );
+
+		$users = get_users();
+
+		$selected_users = get_post_meta( $post->ID, 'editors_editor', false );
+		?>
+        <p><?php esc_html_e('Additional Post Editors'); ?></p>
+        <label for="editors_editor" class="screen-reader-text">Editors</label>
+        <select name="editors_editor[]" id="editors_editor" class="select2" multiple="multiple">
+			<?php foreach ( $users as $editor ) : ?>
+				<option value="<?php echo $editor->ID; ?>"
+					<?php
+						$selected = in_array( $editor->ID, $selected_users ) ? 'selected' : '' ;
+						echo $selected;
+					?>
+				>
+					<?php echo $editor->user_nicename; ?>
+				</option>
+			<?php endforeach; ?>
+        </select>
+		<?php
+	}
+
+	/**
+	 * Sends an email to the post author
+	 */
+	public function sbc_send_invite_email( int $post_id, $user ) {
+		$options = get_option( 'sbc_settings' );
+		$send_email = is_array( $options ) && isset( $options['sbc_send_invite_email'] ) ? $options['sbc_send_invite_email'] : null;
+
+		if ( ! $send_email || ! $post_id ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+		$post_link = get_post_permalink( $post_id );
+		$user = get_user_by( 'ID', $user );
+		if ( $user && $post_link && $post ) {
+			$email = $user->user_email;
+
+			wp_mail( 
+				$email,
+				esc_html( 'Invite to edit ' . $post->post_title ),
+				esc_html( 'You have been invited to edit this this post.' . ' To view your post login here. ' . $post_link )
+			);
+		}
+
+		return;
+	}
+
+	public function sbc_editors_save( $post_id, $post, $update ) {
+		if ( ! is_admin() ) return;
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+		if ( ! isset( $_POST['editors_nonce'] ) || ! wp_verify_nonce( $_POST['editors_nonce'], '_editors_nonce' ) ) return;
+		if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+		if ( $_POST['post_name'] !== $post->post_name ) :
+			$update_meta = update_post_meta( $post_id, '_new_post_name', 'true' );
+		endif;
+		$meta_key = 'editors_editor';
+		$existing_users = get_post_meta( $post_id, $meta_key, false );
+
+		if ( ! is_array( $existing_users ) ) {
+			$existing_users = array( $existing_users );
+		}
+
+
+		$add_existing_user = false;
+
+		// If the exisitng user is invited, manually add them so we don't overide them.
+		if ( in_array( wp_get_current_user()->ID, $existing_users ) ) {
+			$add_existing_user = true;
+		}
+
+		if ( isset( $_POST['editors_editor'] ) ) :// Check if editors are set.
+
+			if ( is_array( $_POST['editors_editor'] ) ) :
+
+				delete_post_meta( $post_id, $meta_key); // Reset editors
+
+				foreach ( $_POST['editors_editor'] as $owner ) :
+					if ( false === get_user_by( 'ID', $owner ) ) {
+						continue;
+					}
+
+					// If the author doesn't already exist, send them an invite
+					if ( ! in_array( $owner, $existing_users ) ) {
+						$this->sbc_send_invite_email( $post_id, $owner );
+					}
+
+					add_post_meta( $post_id, $meta_key, $owner );
+				endforeach;
+
+			else :
+
+				update_post_meta( $post_id, $meta_key, $_POST['editors_editor'] );
+
+			endif;
+
+        else :// If its not set in request
+
+            delete_post_meta( $post_id, $meta_key ); // Remove existing moderators.
+
+		endif;
+	}
+
 	public function sbc_owners_add_meta_box() {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
@@ -291,6 +513,7 @@ class Border_Control_Admin {
 			</select>
 		<?php
 	}
+
 	public function sbc_updated_options( $input ) {
 		global $wp_roles;
 		if ( ! function_exists( 'populate_roles' ) ) :
@@ -505,7 +728,6 @@ class Border_Control_Admin {
 	 * @author Warren Reeves
 	 */
 	function sbc_change_publish_button_simple( $translated_text, $text, $domain ) {
-
 		if ( isset( $_GET['post'] ) && is_admin() && ( 'Update' === $text || 'Publish' === $text ) ) :
 			if ( $this->sbc_is_controlled_cpt() ) :
 				if ( post_type_exists( get_post_type( $_GET['post'] ) ) ) :
@@ -969,7 +1191,31 @@ class Border_Control_Admin {
                 endif;
 			endif;
 		endif;
+
+		// If the user editing has been invited in we don't update the authour.
+		if ( $this->author_has_been_invited( (int)$postarr['ID'] ) ) {
+			$data['post_author'] = $postarr['post_author'];
+		}
+
 		return $data;
+	}
+
+	/**
+	 * Checks if the logged in user has been invited into the given post.
+	 * @return boolean
+	 */
+	public function author_has_been_invited( int $post_id ) {
+		$existing_users = get_post_meta( $post_id, 'editors_editor', false );
+
+		if ( ! is_array( $existing_users) ) {
+			$existing_users = array( $existing_users );
+		}
+
+		if ( in_array( wp_get_current_user()->ID, $existing_users ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public function sbc_hide_slug_box( $return, $post_id, $new_title, $new_slug, $post ) {
