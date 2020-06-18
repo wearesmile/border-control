@@ -160,7 +160,9 @@ class Border_Control {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_add_admin_menu' ); // Create BC settings menu item.
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'sbc_settings_init' ); // Setup the BC settings screen.
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_owners_add_meta_box' ); // Add owners metabox to post edit screen.
+		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_editors_add_meta_box' ); // Add editors metabox to post edit screen.
 		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save', 10, 3 ); // Save owners to a post.
+		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_editors_save', 10, 3 ); // Save editors to a post.
 		// $this->loader->add_action( 'transition_post_status', $plugin_admin, 'sbc_publish_revision', 9999, 3 ); // Add latest revision as meta value when post is published.
 		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
 
@@ -180,6 +182,7 @@ class Border_Control {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'sbc_remove_post_fields' );
 		
 		$this->loader->add_filter( 'wp_revisions_to_keep', $plugin_admin, 'sbc_revisions_to_keep', 10, 2 ); // Keep infinite revisions
+		$this->loader->add_filter( 'user_has_cap', $plugin_admin, 'sbc_grant_edit_access', 10, 3 ); // Grant editors special access if granted
 
 		// Hooks for saving / restoring post meta data.
 		$this->loader->add_action( '_wp_put_post_revision', $plugin_admin, 'save_post_revision_meta', 10, 3 );
