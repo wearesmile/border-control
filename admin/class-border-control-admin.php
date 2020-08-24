@@ -1150,7 +1150,9 @@ class Border_Control_Admin {
 		if ( ! is_admin() ) return;
 		$editor = get_role( 'editor' );
 
-		if ( $editor ) {
+		$editors_can_publish = apply_filters( 'sbc_can_editors_publish', false );
+
+		if ( $editor && false === $editors_can_publish ) {
 			// A list of capabilities to remove from editors.
 			$caps = array(
 				'publish_posts',
