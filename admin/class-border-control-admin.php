@@ -166,6 +166,30 @@ class Border_Control_Admin {
 			'sbc_borderControlPage_section'
 		);
 
+		add_settings_field(
+			'sbc_editors_can_publish',
+			__( 'Editors Can Publish', 'smile' ),
+			array( $this, 'sbc_editors_can_publish' ),
+			'borderControlPage',
+			'sbc_borderControlPage_section'
+		);
+
+	}
+
+	/**
+	 * Option box for enabling editor publishing
+	 */
+	public function sbc_editors_can_publish() {
+		$options = get_option( 'sbc_settings' );
+		?>
+			<?php
+			$name = 'sbc_can_publush';
+			?>
+			<input type="checkbox" name="sbc_settings[<?php esc_attr_e( $name ); ?>]" value="sbc_can_publush" <?php
+				if ( isset( $options[ $name ] ) && 'sbc_can_publush' === $options[ $name ] ) :
+				   echo 'checked="checked"';
+				endif; ?>>
+		<?php
 	}
 
 	/**
@@ -1146,26 +1170,45 @@ class Border_Control_Admin {
 		endif;
 		return;
 	}
+
+	/**
+	 * Add filter that checks to see if the settings has been turned on
+	 */
+	public function editor_can_publish() {
+		$options = get_option( 'sbc_settings' );
+		$can_publish = $options['sbc_can_publush'] ?? false;
+
+		if ( $can_publish ) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public function sbc_manage_caps() {
 		if ( ! is_admin() ) return;
 		$editor = get_role( 'editor' );
 
 		$editors_can_publish = apply_filters( 'sbc_can_editors_publish', false );
 
+		$caps = array(
+			'publish_posts',
+			'publish_pages',
+		);
+
 		if ( $editor && false === $editors_can_publish ) {
-			// A list of capabilities to remove from editors.
-			$caps = array(
-				'publish_posts',
-				'publish_pages',
-			);
-
 			foreach ( $caps as $cap ) {
-
-				// Remove the capability.
 				$editor->remove_cap( $cap );
 			}
 		}
+
+		if ( $editor && false !== $editors_can_publish ) {
+			foreach ( $caps as $cap ) {
+				$editor->add_cap( $cap );
+			}
+		}
 	}
+ 
 	public function sbc_publish_check( $data, $postarr ) {
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;

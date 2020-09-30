@@ -172,6 +172,7 @@ class Border_Control {
 
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_register_pending' ); // Add `sbc_` prefixed post statuses.
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_manage_caps', 9999 ); // Force BC capailities to affected posts and roles.
+		$this->loader->add_action( 'sbc_can_editors_publish', $plugin_admin, 'editor_can_publish', 10, 0 );
 		$this->loader->add_filter( 'wp_insert_post_data', $plugin_admin, 'sbc_publish_check', 9999, 2 ); // Force `sbc_` post statuses.
 
 		$this->loader->add_action( 'init', $plugin_admin, 'sbc_force_revisions' ); // Enable revisions on selected post types.
