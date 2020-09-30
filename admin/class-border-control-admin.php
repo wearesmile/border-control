@@ -1191,20 +1191,24 @@ class Border_Control_Admin {
 
 		$editors_can_publish = apply_filters( 'sbc_can_editors_publish', false );
 
+		$caps = array(
+			'publish_posts',
+			'publish_pages',
+		);
+
 		if ( $editor && false === $editors_can_publish ) {
-			// A list of capabilities to remove from editors.
-			$caps = array(
-				'publish_posts',
-				'publish_pages',
-			);
-
 			foreach ( $caps as $cap ) {
-
-				// Remove the capability.
 				$editor->remove_cap( $cap );
 			}
 		}
+
+		if ( $editor && false !== $editors_can_publish ) {
+			foreach ( $caps as $cap ) {
+				$editor->add_cap( $cap );
+			}
+		}
 	}
+ 
 	public function sbc_publish_check( $data, $postarr ) {
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
