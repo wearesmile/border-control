@@ -1170,12 +1170,26 @@ class Border_Control_Admin {
 		endif;
 		return;
 	}
+
+	/**
+	 * Add filter that checks to see if the settings has been turned on
+	 */
+	public function editor_can_publish() {
+		$options = get_option( 'sbc_settings' );
+		$can_publish = $options['sbc_can_publush'] ?? false;
+
+		if ( $can_publish ) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public function sbc_manage_caps() {
 		if ( ! is_admin() ) return;
 		$editor = get_role( 'editor' );
 
-		$options = get_option( 'sbc_settings' );
-		$editors_can_publish = $options['sbc_send_invite_email'] ?? false;
+		$editors_can_publish = apply_filters( 'sbc_can_editors_publish', false );
 
 		if ( $editor && false === $editors_can_publish ) {
 			// A list of capabilities to remove from editors.
