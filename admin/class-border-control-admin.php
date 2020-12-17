@@ -1167,6 +1167,11 @@ class Border_Control_Admin {
 		}
 	}
 	public function sbc_publish_check( $data, $postarr ) {
+		// Skips the publish check if specified in the args.
+		if ( isset( $postarr['sbc_skip_check'] ) && true === $postarr['sbc_skip_check'] ) {
+			return $data;
+		}
+
 		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $data;
 //		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
 		if ( 'auto-draft' === $data['post_status'] ) return $data;
