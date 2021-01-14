@@ -1140,35 +1140,51 @@ class Border_Control_Admin {
 			'label_count'               => _n_noop( 'Pending Initial Publish <span class="count">(%s)</span>', 'Pending Initial Publish <span class="count">(%s)</span>' ),
 		) );
 	}
-	public function sbc_publish_revision( $new_status, $old_status, $post ) {
 
-		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return;
+	public function sbc_publish_revision( $post_id, $data ) {
 
-		if ( 'publish' !== $old_status || $new_status === $old_status ) :
-			return;
-		endif;
+		// Are we auto saving.
+		if ( (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || ( defined('DOING_AJAX') && DOING_AJAX) || isset($_REQUEST['bulk_edit']) ) return $post_id;
 
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
-		if ( in_array( $post->post_type, $post_types ) ) :
+		// If post type enabled in border control settings
+		if ( in_array( $data['post_type'], $post_types ) ) :
 
-			$revisions = get_posts(
-				array(
-					'orderby'     => 'date',
-					'order'       => 'DESC',
-					'post_status' => array( 'inherit', 'sbc_publish' ),
-					'post_type'   => 'revision',
-					'numberposts' => '1',
-					'post_parent' => $post->ID,
-					'name'        => $post->ID . '-revision-v1',
-				)
-			);
+			$prev_post = get_post( $post_id );
 
-			update_post_meta( $post->ID, '_latest_revision', $revisions[0]->ID );
+			// If previous published.
+			if ( ! in_array( $data['post_type'], array( 'publish', 'sbc_publish' ) ) && 'publish' === $prev_post->post_status && ! get_post_meta( $post_id, '_latest_revision', true ) ) :
+
+				// Create a post revision.
+				$revision = wp_save_post_revision( $post_id );
+
+				if ( ! $revision || ! is_integer( $revision ) ) {
+
+					$revisions = wp_get_post_revisions( $post_id );
+					if ( $revisions ) {
+						// Grab the last revision, but not an autosave.
+						foreach ( $revisions as $revision ) {
+							if ( false !== strpos( $revision->post_name, "{$revision->post_parent}-revision" ) ) {
+								$last_revision = $revision;
+								break;
+							}
+						}
+					}
+
+					$revision = $last_revision->ID;
+				}
+
+				if ( $revision && is_integer( $revision ) ) {
+					// Set the post revision as the _latest_revision
+					update_post_meta( $post_id, '_latest_revision', $revision );
+				}
+			endif;
 
 		endif;
-		return;
+
+		return $post_id;
 	}
 
 	/**

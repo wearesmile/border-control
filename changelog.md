@@ -36,3 +36,9 @@ Feature:
 Hotfix:
 
   - Added a function exists check for add meta function.
+
+## 1.0.55 (13-01-2021)
+
+Fix:
+
+  - Fixed issue where posts would 404 if it was submitted for review, but was published before border control was active.
