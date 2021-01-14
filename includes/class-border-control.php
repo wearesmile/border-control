@@ -163,7 +163,7 @@ class Border_Control {
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'sbc_editors_add_meta_box' ); // Add editors metabox to post edit screen.
 		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_owners_save', 10, 3 ); // Save owners to a post.
 		$this->loader->add_action( 'save_post', $plugin_admin, 'sbc_editors_save', 10, 3 ); // Save editors to a post.
-		// $this->loader->add_action( 'transition_post_status', $plugin_admin, 'sbc_publish_revision', 9999, 3 ); // Add latest revision as meta value when post is published.
+		$this->loader->add_action( 'pre_post_update', $plugin_admin, 'sbc_publish_revision', 9999, 2 ); // Add latest revision as meta value when post moves from published.
 		$this->loader->add_action( 'post_submitbox_start', $plugin_admin, 'sbc_reject_submit_box' );
 
 		$this->loader->add_filter( 'gettext', $plugin_admin, 'sbc_change_publish_button_simple', 10, 3 );
