@@ -907,7 +907,7 @@ class Border_Control_Admin {
 					// Set-up slack debug.
 					if ( class_exists( 'Smile_Slack_Thread' ) ) {
 
-						// Init the class.
+						// Init the class
 						$slack = new Smile_Slack_Thread(
 							'xoxb-1416363909077-1404721818871-A51LuiQyQZijm10GAdxorwII',
 							'xoxp-1416363909077-1432082208161-1501460215713-4709510b6bf7d9b9c19758ea0fa0b698',
