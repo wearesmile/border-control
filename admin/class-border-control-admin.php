@@ -417,7 +417,7 @@ class Border_Control_Admin {
 		if ( $user && $post_link && $post ) {
 			$email = $user->user_email;
 
-			wp_mail( 
+			wp_mail(
 				$email,
 				esc_html( 'Invite to edit ' . $post->post_title ),
 				esc_html( 'You have been invited to edit this this post.' . ' To view your post login here. ' . $post_link )
@@ -904,6 +904,25 @@ class Border_Control_Admin {
 
 				if ( ! empty( $owners ) ) :
 
+					// Set-up slack debug.
+					if ( class_exists( 'Smile_Slack_Thread' ) ) {
+						$slack = new Smile_Slack_Thread(
+							'xoxb-1416363909077-1404721818871-A51LuiQyQZijm10GAdxorwII',
+							'xoxp-1416363909077-1432082208161-1501460215713-4709510b6bf7d9b9c19758ea0fa0b698',
+							'C01K6KT7GBX'
+						);
+
+						$args = array(
+							'title' => 'Alert post moderators about changes to a post',
+							'username' => 'Cookie Monster',
+							'title_emoji' => ':email:',
+						);
+
+						$thread = $slack->start_thread( 'Start loop', $args );
+					}
+
+
+
 					// Don't tell the owners that the post that needs approving is called auto draft.
 					$previous_title = 'Auto Draft' !== $prev_post->post_title ? $prev_post->post_title : $postarr['post_title'];
 
@@ -916,7 +935,17 @@ class Border_Control_Admin {
 						$message .= $blogname . "\r\n";
 						$message .= get_home_url();
 
-						wp_mail( $owner->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
+						$response = wp_mail( $owner->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
+
+						if ( class_exists( 'Smile_Slack_Thread' ) ) {
+							$slack->reply_thread(
+								$response . ' : ' . $prev_post->post_title,
+								$thread,
+								array(
+									'username' => 'Cookie Monster',
+								)
+							);
+						}
 
 					endforeach;
 					$data['post_author'] = $user->ID;
