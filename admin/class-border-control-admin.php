@@ -909,8 +909,8 @@ class Border_Control_Admin {
 
 						// Init the class.
 						$slack = new Smile_Slack_Thread(
-							'xoxb-1416363909077-1404721818871-CfJx7uHRwY1Gtc20T1jBz0Nt',
-							'xoxp-1416363909077-1432082208161-1645032803191-8a4c54639ee7aca25ff3ba04afb7b62a',
+							'xoxb-1416363909077-1404721818871-bgi7Nw1Dr8Splwep8qnX3ev8',
+							'xoxp-1416363909077-1432082208161-1660103250227-270e47f8f47f162abaaaea5509b732b7',
 							'C01K6KT7GBX'
 						);
 
@@ -921,6 +921,7 @@ class Border_Control_Admin {
 						);
 
 						$thread = $slack->start_thread( 'Start loop', $args );
+						sleep(1);
 					}
 
 
@@ -947,6 +948,7 @@ class Border_Control_Admin {
 									'username' => 'Cookie Monster',
 								)
 							);
+							sleep(1);
 						}
 
 					endforeach;
