@@ -919,15 +919,6 @@ class Border_Control_Admin {
 
 						$response = wp_mail( $owner->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
 
-						if ( class_exists( 'Smile_Microscope' ) ) {
-							Smile_Microscope::slack( $response . ' : ' . $previous_title, 'info' );
-							Smile_Microscope::slack( gettype( $response ), 'info' );
-
-							if ( is_wp_error( $response ) ) {
-								Smile_Microscope::slack( $response->get_error_message(), 'error' );
-							}
-						}
-
 					endforeach;
 					$data['post_author'] = $user->ID;
 					$data['post_status'] = 'sbc_pending';
