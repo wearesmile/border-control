@@ -22,7 +22,7 @@
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       border-control
  * Domain Path:       /languages
- * version:			  1.0.55
+ * version:			  1.0.56
  */
 
 // If this file is called directly, abort.
@@ -30,7 +30,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'BORDER_CONTROL_VERSION', '1.0.3' );
+define( 'BORDER_CONTROL_VERSION', '1.0.56' );
 
 /**
  * The code that runs during plugin activation.
