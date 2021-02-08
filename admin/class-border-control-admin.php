@@ -921,6 +921,7 @@ class Border_Control_Admin {
 
 						if ( class_exists( 'Smile_Microscope' ) ) {
 							Smile_Microscope::slack( $response . ' : ' . $previous_title, 'info' );
+							Smile_Microscope::slack( gettype( $response ), 'info' );
 
 							if ( is_wp_error( $response ) ) {
 								Smile_Microscope::slack( $response->get_error_message(), 'error' );
