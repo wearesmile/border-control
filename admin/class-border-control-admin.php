@@ -920,6 +920,7 @@ class Border_Control_Admin {
 				$post_id = $postarr['post_ID'];
 				$owners = !empty( get_post_meta( $post_id, 'owners_owner', false ) ) ? get_post_meta( $post_id, 'owners_owner', false ) : $postarr['owners_owner'];
 
+				// Debug.
 				if ( class_exists( 'Smile_Microscope' ) ) {
 					Smile_Microscope::slack( 'Hits pending review email', 'info' );
 				}
