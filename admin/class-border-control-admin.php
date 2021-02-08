@@ -905,26 +905,9 @@ class Border_Control_Admin {
 				if ( ! empty( $owners ) ) :
 
 					// Set-up slack debug.
-					if ( class_exists( 'Smile_Slack_Thread' ) ) {
-
-						// Init the class.
-						$slack = new Smile_Slack_Thread(
-							'xoxb-1416363909077-1404721818871-bgi7Nw1Dr8Splwep8qnX3ev8',
-							'xoxp-1416363909077-1432082208161-1660103250227-270e47f8f47f162abaaaea5509b732b7',
-							'C01K6KT7GBX'
-						);
-
-						$args = array(
-							'title' => 'Alert post moderators about changes to a post',
-							'username' => 'Cookie Monster',
-							'title_emoji' => ':email:',
-						);
-
-						$thread = $slack->start_thread( 'Start loop', $args );
-						sleep(1);
+					if ( class_exists( 'Smile_Microscope' ) ) {
+						Smile_Microscope::slack( 'Start sending pending review emails', 'info' );
 					}
-
-
 
 					// Don't tell the owners that the post that needs approving is called auto draft.
 					$previous_title = 'Auto Draft' !== $prev_post->post_title ? $prev_post->post_title : $postarr['post_title'];
@@ -940,15 +923,8 @@ class Border_Control_Admin {
 
 						$response = wp_mail( $owner->user_email, '[' . $blogname . '] Post updated and pending review (' . $prev_post->post_title . ')', $message );
 
-						if ( class_exists( 'Smile_Slack_Thread' ) ) {
-							$slack->reply_thread(
-								$response . ' : ' . $prev_post->post_title,
-								$thread,
-								array(
-									'username' => 'Cookie Monster',
-								)
-							);
-							sleep(1);
+						if ( class_exists( 'Smile_Microscope' ) ) {
+							Smile_Microscope::slack( $response . ' : ' . $previous_title, 'info' );
 						}
 
 					endforeach;
