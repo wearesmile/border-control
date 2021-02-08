@@ -775,13 +775,31 @@ class Border_Control_Admin {
 	public function sbc_reject_post_save( $data, $postarr ) {
 		//if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
 
+		if ( class_exists( 'Smile_Microscope' ) ) {
+			Smile_Microscope::slack( 'Hits the function.', 'info' );
+		}
+
 		if ( empty( $postarr ) )
 			return $data;
 
+		if ( class_exists( 'Smile_Microscope' ) ) {
+			Smile_Microscope::slack( 'Does not return early', 'info' );
+		}
+
 		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
+
+			if ( class_exists( 'Smile_Microscope' ) ) {
+				Smile_Microscope::slack( 'Is a border controlled cpt', 'info' );
+			}
+
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 			if ( isset( $postarr['post_ID'] ) ) :
+
+				if ( class_exists( 'Smile_Microscope' ) ) {
+					Smile_Microscope::slack( 'post arr post_id isset', 'info' );
+				}
+
 				$post_id = $postarr['post_ID'];
 				$prev_post = get_post( $post_id );
 				$author_user = get_userdata( $prev_post->post_author );
@@ -901,6 +919,10 @@ class Border_Control_Admin {
 			if ( $pending_review_email ) :
 				$post_id = $postarr['post_ID'];
 				$owners = !empty( get_post_meta( $post_id, 'owners_owner', false ) ) ? get_post_meta( $post_id, 'owners_owner', false ) : $postarr['owners_owner'];
+
+				if ( class_exists( 'Smile_Microscope' ) ) {
+					Smile_Microscope::slack( 'Hits pending review email', 'info' );
+				}
 
 				if ( ! empty( $owners ) ) :
 
