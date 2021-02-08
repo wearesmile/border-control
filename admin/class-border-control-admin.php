@@ -788,17 +788,9 @@ class Border_Control_Admin {
 
 		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
 
-			if ( class_exists( 'Smile_Microscope' ) ) {
-				Smile_Microscope::slack( 'Is a border controlled cpt', 'info' );
-			}
-
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
 			if ( isset( $postarr['post_ID'] ) ) :
-
-				if ( class_exists( 'Smile_Microscope' ) ) {
-					Smile_Microscope::slack( 'post arr post_id isset', 'info' );
-				}
 
 				$post_id = $postarr['post_ID'];
 				$prev_post = get_post( $post_id );
@@ -920,17 +912,7 @@ class Border_Control_Admin {
 				$post_id = $postarr['post_ID'];
 				$owners = !empty( get_post_meta( $post_id, 'owners_owner', false ) ) ? get_post_meta( $post_id, 'owners_owner', false ) : $postarr['owners_owner'];
 
-				// Debug.
-				if ( class_exists( 'Smile_Microscope' ) ) {
-					Smile_Microscope::slack( 'Hits pending review email', 'info' );
-				}
-
 				if ( ! empty( $owners ) ) :
-
-					// Set-up slack debug.
-					if ( class_exists( 'Smile_Microscope' ) ) {
-						Smile_Microscope::slack( 'Start sending pending review emails', 'info' );
-					}
 
 					// Don't tell the owners that the post that needs approving is called auto draft.
 					$previous_title = 'Auto Draft' !== $prev_post->post_title ? $prev_post->post_title : $postarr['post_title'];
@@ -948,6 +930,10 @@ class Border_Control_Admin {
 
 						if ( class_exists( 'Smile_Microscope' ) ) {
 							Smile_Microscope::slack( $response . ' : ' . $previous_title, 'info' );
+
+							if ( is_wp_error( $response ) ) {
+								Smile_Microscope::slack( $response->get_error_message() 'error' );
+							}
 						}
 
 					endforeach;
