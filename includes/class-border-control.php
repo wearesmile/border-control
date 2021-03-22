@@ -203,9 +203,7 @@ class Border_Control {
 
 		$plugin_public = new Border_Control_Public( $this->get_plugin_name(), $this->get_version() );
 
-		if ( ! isset( $_GET['debug_sbc'] ) ) {
-			$this->loader->add_action( 'the_posts', $plugin_public, 'sbc_set_the_posts', 999999, 2 );
-		}
+		$this->loader->add_action( 'the_posts', $plugin_public, 'sbc_set_the_posts', 999999, 2 );
 
 	}
 
