@@ -71,11 +71,6 @@ class Border_Control_Public {
 		if ( ! is_admin() && ! wp_doing_ajax() && true !== $sbc_disable ) :
 			$options = get_option( 'sbc_settings' );
 			$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
-
-			if ( 'smile_debug' === $_GET['debug_site'] ) :
-				var_dump( $posts );die;
-			endif;
-
 			foreach ( $posts as $key => $post_object ) :
 				if ( 'smile_debug' === $_GET['debug_site'] ) :
 					var_dump( $post_object );
