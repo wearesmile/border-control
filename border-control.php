@@ -70,10 +70,6 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-border-control.php';
  */
 function run_border_control() {
 
-	if ( isset( $_GET['stop_bc'] ) ) {
-		return;
-	}
-
 	$plugin = new Border_Control();
 	$plugin->run();
 
