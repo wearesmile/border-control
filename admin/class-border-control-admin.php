@@ -103,6 +103,185 @@ class Border_Control_Admin {
 	}
 
 	/**
+	 * Adds the reject button to gutenberg editor.
+	 */
+	function inject_link_gutenberg() {
+
+		global $post;
+
+		if ( $this->sbc_is_controlled_cpt() && $this->sbc_can_user_moderate() ) :
+			$owners = get_post_meta( get_the_ID(), 'owners_owner', false );
+			$user_id = get_current_user_id();
+
+			if ( ( empty( $owners ) || ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) ) ) && 'sbc_pending' === $post->post_status ) :
+				wp_enqueue_script( 'custom-link-in-toolbar', plugin_dir_url( __FILE__ ) . 'js/gutenberg-admin.js', array(), '1.0', true );
+
+				wp_localize_script(
+					'custom-link-in-toolbar',
+					'smileBorderControlAjax',
+					array(
+						'rest'         => get_rest_url() . 'border-control/reject',
+						'nonce'        => wp_create_nonce( 'wp_rest' ),
+						'can_moderate' => $this->sbc_can_user_moderate(),
+						'post_id'      => $post->ID,
+						'isBorderControlled' => $this->sbc_is_controlled_cpt( get_post_type( $post->ID ) ),
+					)
+				);
+			endif;
+		endif;
+
+		// If they can't mod then we must make moderator selection required
+		if ( $this->sbc_is_controlled_cpt() && ! $this->sbc_can_user_moderate() ) :
+
+			wp_enqueue_script( 'required-moderator-script', plugin_dir_url( __FILE__ ) . 'js/gutenberg-required-mods.js', array(), '1.0', true );
+		
+			wp_localize_script(
+				'required-moderator-script',
+				'smileBorderControlMods',
+				array(
+					'rest'         => get_rest_url() . 'border-control/status',
+					'nonce'        => wp_create_nonce( 'wp_rest' ),
+					'post_id'      => $post->ID,
+					'isBorderControlled' => $this->sbc_is_controlled_cpt( get_post_type( $post->ID ) ),
+				)
+			);
+		endif;
+	}
+
+	/**
+	 * Endpoints for gutenberg
+	 */
+	public function init_rest_endpoints() {
+
+		register_rest_route(
+			'border-control',
+			'reject',
+			array(
+				'methods' => 'POST',
+				'args'    => array(),
+				'callback' => array( $this, 'reject_post_edit' ),
+				'permission_callback' => function( $request ) {
+					return is_user_logged_in();
+				},
+			)
+		);
+
+		register_rest_route(
+			'border-control',
+			'status',
+			array(
+				'methods' => 'POST',
+				'args'    => array(),
+				'callback' => array( $this, 'fetch_post_status' ),
+				'permission_callback' => function( $request ) {
+					return is_user_logged_in();
+				},
+			)
+		);
+	}
+
+	public function fetch_post_status( $request ) {
+
+		if (
+			! $request->get_param( 'id' ) ||
+			! is_numeric( $request->get_param( 'id' ) ) ||
+			$request->get_param( 'id' ) < 1
+		) {
+
+			$result = new WP_REST_Response(
+				array(
+					'message' => 'Required fields missing.',
+					'code'    => '500',
+				)
+			);
+	
+			$result->set_status( 500 );
+			return $result;
+		}
+
+		return get_post_status( $request->get_param( 'id' ) );
+	}
+
+	/**
+	 * Callback for the rest endpoint to reject a post edit.
+	 */
+	public function reject_post_edit( $request ) {
+
+		// Check if the user can edit.
+		if ( ! $this->sbc_can_user_moderate() ) {
+			return 'fail'; // probably return an object with a reason.
+		}
+
+		$post_id = $request->get_param( 'id' );
+
+		if ( ! $post_id || empty( $post_id ) || ! is_numeric( $post_id ) || $post_id < 1 ) {
+			return 'faild again';
+		}
+
+		if ( ! $this->sbc_is_controlled_cpt( get_post_type( $post_id ) ) ) {
+			return 'no';
+		}
+
+		$owners  = get_post_meta( $post_id, 'owners_owner', false );
+		$user_id = get_current_user_id();
+		$post    = get_post( $post_id );
+
+		if ( ( empty( $owners ) || ( ! empty( $owners ) && is_array( $owners ) && in_array( (string) $user_id, $owners, true ) ) ) && 'sbc_pending' === $post->post_status ) :
+			return $this->reject_post_publish( $post_id );
+		endif;
+
+		return get_current_blog_id();
+	}
+
+	/**
+	 * Reject the post edits.
+	 */
+	protected function reject_post_publish( $post_id ) {
+
+		$pending_review_email = false;
+		$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+
+		$prev_post = get_post( $post_id );
+		$author_user = get_userdata( $prev_post->post_author );
+		$user = wp_get_current_user();
+
+		delete_post_meta( $post_id, '_approve-list' ); // Reset approve list.
+
+		wp_update_post(
+			array(
+				'ID' => $post_id,
+				'post_status' => 'sbc_improve',
+			)
+		);
+
+		$owners = get_post_meta( $post_id, 'owners_owner', false );
+		$owners_author = array_merge( $owners, array( $author_user->ID ) );
+
+		foreach ( $owners_author as $owner_author_id ) :
+
+			$owner_author = get_userdata( $owner_author_id );
+
+			$message = 'Hi ' . $owner_author->display_name . ",\r\n\r\n";
+			$message .= 'This notice is to confirm that ' . $user->display_name . ' has rejected "' . $prev_post->post_title . '" on ' . $blogname . ".\r\n\r\n";
+
+			if ( $owner_author_id === $author_user->ID ) :
+				$message .= "You can modify the post here:\r\n" . get_edit_post_link( $post_id ). "\r\n\r\n";
+			else :
+				$message .= "You will be notified when the author has submitted the post for review again, you do not need to take any action now.\r\n\r\n";
+			endif;
+
+			$message .= "Regards, \r\n";
+			$message .= $blogname . "\r\n";
+			$message .= get_home_url();
+
+			wp_mail( $owner_author->user_email, '[' . $blogname . '] Post rejected (' . $prev_post->post_title . ')', $message );
+
+		endforeach;
+
+		return true;
+	}
+
+	/**
 	 * Register the settings page.
 	 *
 	 * @since    1.0.0
@@ -110,7 +289,6 @@ class Border_Control_Admin {
 	public function sbc_add_admin_menu() {
 
 		add_options_page( 'Border Control', 'Border Control', 'manage_options', 'border_control', array( $this, 'sbc_options_page' ) );
-
 	}
 
 
@@ -383,9 +561,9 @@ class Border_Control_Admin {
 
 		$selected_users = get_post_meta( $post->ID, 'editors_editor', false );
 		?>
-        <p><?php esc_html_e('Additional Post Editors'); ?></p>
-        <label for="editors_editor" class="screen-reader-text">Editors</label>
-        <select name="editors_editor[]" id="editors_editor" class="select2" multiple="multiple">
+		<p><?php esc_html_e('Additional Post Editors'); ?></p>
+		<label for="editors_editor" class="screen-reader-text">Editors</label>
+		<select name="editors_editor[]" id="editors_editor" class="select2" multiple="multiple">
 			<?php foreach ( $users as $editor ) : ?>
 				<option value="<?php echo $editor->ID; ?>"
 					<?php
@@ -396,7 +574,7 @@ class Border_Control_Admin {
 					<?php echo $editor->user_nicename; ?>
 				</option>
 			<?php endforeach; ?>
-        </select>
+		</select>
 		<?php
 	}
 
@@ -475,9 +653,9 @@ class Border_Control_Admin {
 
 			endif;
 
-        else :// If its not set in request
+		else :// If its not set in request
 
-            delete_post_meta( $post_id, $meta_key ); // Remove existing moderators.
+			delete_post_meta( $post_id, $meta_key ); // Remove existing moderators.
 
 		endif;
 	}
@@ -616,9 +794,9 @@ class Border_Control_Admin {
 
 			endif;
 
-        else :// Additional check if moderators aren't set. The only people who can save post without this being set are governance managers and web publishers.
+		else :// Additional check if moderators aren't set. The only people who can save post without this being set are governance managers and web publishers.
 
-            delete_post_meta( $post_id, $meta_key);// Remove existing moderators.
+			delete_post_meta( $post_id, $meta_key);// Remove existing moderators.
 
 		endif;
 
@@ -669,11 +847,13 @@ class Border_Control_Admin {
 		return null;
 	}
 
-	private function sbc_is_controlled_cpt() {
+	private function sbc_is_controlled_cpt( $post_type = false ) {
 		$options = get_option( 'sbc_settings' );
 		$post_types = ( is_array( $options['sbc_post_type'] ) ) ? $options['sbc_post_type'] : [ $options['sbc_post_type'] ];
 
-		$post_type = $this->sbc_get_current_post_type();
+		if ( false === $post_type ) {
+			$post_type = $this->sbc_get_current_post_type();
+		}
 
 		if ( $post_type && in_array( $post_type, $post_types, true ) )
 			return true;
@@ -781,8 +961,9 @@ class Border_Control_Admin {
 		if ( $this->sbc_is_controlled_cpt() ) : //$this->sbc_can_user_moderate()
 			$pending_review_email = false;
 			$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-			if ( isset( $postarr['post_ID'] ) ) :
-				$post_id = $postarr['post_ID'];
+
+			if ( isset( $postarr['ID'] ) ) :
+				$post_id = $postarr['ID'];
 				$prev_post = get_post( $post_id );
 				$author_user = get_userdata( $prev_post->post_author );
 				$user = wp_get_current_user();
@@ -814,8 +995,8 @@ class Border_Control_Admin {
 
 					endforeach;
 
-				elseif ( isset( $postarr['publish'] ) || 'publish' === $postarr['post_status'] ) :
-					if ( 'pending' === $postarr['original_post_status'] || 'sbc_pending' === $postarr['original_post_status'] && $this->sbc_can_user_moderate() ) :
+				// elseif ( isset( $postarr['publish'] ) || 'publish' === $postarr['post_status'] ) :
+				elseif ( 'pending' === $postarr['original_post_status'] || 'sbc_pending' === $postarr['original_post_status'] && $this->sbc_can_user_moderate() ) :
 						$owners = get_post_meta( $post_id, 'owners_owner', false );
 
 						$approved_owners = get_post_meta( $post_id, '_approve-list' );
@@ -887,8 +1068,11 @@ class Border_Control_Admin {
 					elseif ( 'sbc_improve' === $postarr['original_post_status'] || 'auto-draft' === $postarr['original_post_status'] ) :
 						if ( ! $this->sbc_can_user_moderate() && ! current_user_can( 'publish_post', $post_id ) ) :
 							$pending_review_email = true;
+
+							// Update the post status of the post here.
+							$data['post_status'] = 'sbc_pending';
 						endif;
-					elseif ( isset( $postarr['save'] ) && 'Submit for Review' === $postarr['save'] && !$this->sbc_can_user_moderate() ) :
+					elseif ( ! $this->sbc_can_user_moderate() ) : // isset( $postarr['save'] ) && 'Submit for Review' === $postarr['save'] &&
 						if ( 'publish' === $postarr['original_post_status'] ) :
 							$pending_review_email = true;
 						endif;
@@ -896,7 +1080,7 @@ class Border_Control_Admin {
 						if ( false === $this->sbc_can_user_moderate() )
 							$data['post_author'] = $user->ID;
 					endif;
-				endif;
+				// endif;
 			endif;
 			if ( $pending_review_email ) :
 				$post_id = $postarr['post_ID'];
@@ -924,13 +1108,13 @@ class Border_Control_Admin {
 				endif;
 			endif;
 
-            $owners = false;
+			$owners = false;
 
-            if ( isset( $post_id ) ) :
+			if ( isset( $post_id ) ) :
 
-                $owners = get_post_meta( $post_id, 'owners_owner', false );
+				$owners = get_post_meta( $post_id, 'owners_owner', false );
 
-            endif;
+			endif;
 
 			if ( is_array( $owners ) && ! in_array( (string) $user->ID, $owners, true ) ) :
 
@@ -1250,11 +1434,11 @@ class Border_Control_Admin {
 				endif;
 			endif;
 			if ( 'sbc_pending' === $data['post_status'] && ! current_user_can( 'publish_post', $postarr['ID'] ) ) :
-                if ( isset( $postarr['post_name'] ) ) :
-                    $data['post_name'] = $postarr['post_name'];
-                elseif ( isset( $postarr['post_title'] ) ) :
-                    $data['post_title'] = $postarr['post_title'];
-                endif;
+				if ( isset( $postarr['post_name'] ) ) :
+					$data['post_name'] = $postarr['post_name'];
+				elseif ( isset( $postarr['post_title'] ) ) :
+					$data['post_title'] = $postarr['post_title'];
+				endif;
 			endif;
 		endif;
 
