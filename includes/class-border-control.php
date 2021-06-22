@@ -154,6 +154,10 @@ class Border_Control {
 
 		$plugin_admin = new Border_Control_Admin( $this->get_plugin_name(), $this->get_version() );
 
+		$this->loader->add_action( 'enqueue_block_editor_assets', $plugin_admin,  'inject_link_gutenberg' );
+
+		$this->loader->add_action( 'rest_api_init', $plugin_admin, 'init_rest_endpoints' );
+
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' ); // Include Styles.
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' ); // Include Scripts.
 

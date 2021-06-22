@@ -5,3 +5,7 @@
 .settings_page_border_control .select2 {
 	width: 100%;
 }
+
+.bc-reject {
+	display: flex !important;
+}

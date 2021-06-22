@@ -22,7 +22,7 @@
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       border-control
  * Domain Path:       /languages
- * version:			  1.0.55
+ * version:			  1.1.0
  */
 
 // If this file is called directly, abort.
